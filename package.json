@@ -1,0 +1,21 @@
+{
+  "name": "@shockproofai/shockproof-skills",
+  "version": "1.0.0",
+  "description": "Shockproof AI presentation and training module generation skills for Claude Code",
+  "main": "index.js",
+  "type": "commonjs",
+  "keywords": [
+    "claude-code",
+    "claude-plugin",
+    "shockproof",
+    "presentation",
+    "slides",
+    "training"
+  ],
+  "author": "Shockproof AI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shockproofai/shockproof-skills.git"
+  }
+}

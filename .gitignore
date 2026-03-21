@@ -1,0 +1,10 @@
+node_modules/
+skills/*/node_modules/
+skills/shared/*/node_modules/
+skills/*/mnt/outputs/*
+!skills/*/mnt/outputs/.gitkeep
+*.DS_Store
+.DS_Store
+*.pdf
+*.mp4
+*.zip

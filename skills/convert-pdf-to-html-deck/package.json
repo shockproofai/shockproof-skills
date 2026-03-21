@@ -1,0 +1,12 @@
+{
+  "name": "convert-pdf-to-html-deck",
+  "version": "1.0.0",
+  "description": "Convert an existing PDF into a Shockproof AI branded HTML deck with video",
+  "main": "scripts/convert.js",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^5.5.207"
+  }
+}

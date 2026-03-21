@@ -1,0 +1,17 @@
+{
+  "name": "@shockproofai/shockproof-skills",
+  "version": "1.0.0",
+  "description": "Shockproof AI presentation and training module generation skills for Claude Code",
+  "skills": [
+    {
+      "name": "create-html-deck",
+      "path": "skills/create-html-deck",
+      "description": "Generate Shockproof AI branded training presentation modules as PNG slides or PDF using HTML/CSS + Puppeteer"
+    },
+    {
+      "name": "convert-pdf-to-html-deck",
+      "path": "skills/convert-pdf-to-html-deck",
+      "description": "Convert an existing PDF presentation into a narrated Shockproof AI training video"
+    }
+  ]
+}
