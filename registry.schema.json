@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/shockproofai/shockproof-skills/main/registry.schema.json",
+  "title": "Shockproof Skills Registry",
+  "description": "Schema for the shockproof-skills marketplace registry",
+  "type": "object",
+  "required": ["version", "skills"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Registry format version (semver)"
+    },
+    "updatedAt": {
+      "type": "string",
+      "description": "ISO date of last registry update"
+    },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/skill" }
+    }
+  },
+  "definitions": {
+    "skill": {
+      "type": "object",
+      "required": ["id", "version", "name", "description", "tags", "author", "path", "skillmd"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique kebab-case identifier for the skill",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "version": {
+          "type": "string",
+          "description": "Skill version (semver)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable display name"
+        },
+        "description": {
+          "type": "string",
+          "description": "One- or two-sentence description used for discovery"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Keywords for search and filtering"
+        },
+        "author": {
+          "type": "string",
+          "description": "GitHub username or org name of the skill author"
+        },
+        "path": {
+          "type": "string",
+          "description": "Relative path to the skill directory from repo root"
+        },
+        "skillmd": {
+          "type": "string",
+          "description": "Relative path to the SKILL.md file"
+        },
+        "userInvocable": {
+          "type": "boolean",
+          "description": "Whether the skill can be invoked directly by the user (e.g. /skill-name)"
+        },
+        "shared": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Names of shared packages this skill depends on (under skills/shared/)"
+        },
+        "dependencies": {
+          "type": "object",
+          "properties": {
+            "npm": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "npm packages required at runtime (beyond those in shared/)"
+            },
+            "shared": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Shared packages required (must match entries in skills/shared/)"
+            },
+            "env": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Required environment variable names"
+            }
+          }
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO date this skill entry was last updated"
+        }
+      }
+    }
+  }
+}

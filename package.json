@@ -1,21 +1,37 @@
 {
   "name": "@shockproofai/shockproof-skills",
   "version": "1.0.0",
-  "description": "Shockproof AI presentation and training module generation skills for Claude Code",
+  "description": "Shockproof AI Claude Code skills marketplace — presentation generation, PDF conversion, and training module creation",
   "main": "index.js",
   "type": "commonjs",
+  "bin": {
+    "shockproof-skills": "./scripts/install.js"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./registry": "./registry.json",
+    "./skills/*/SKILL.md": "./skills/*/SKILL.md"
+  },
   "keywords": [
     "claude-code",
     "claude-plugin",
+    "claude-skill",
     "shockproof",
     "presentation",
     "slides",
-    "training"
+    "pdf",
+    "training",
+    "puppeteer",
+    "marketplace"
   ],
   "author": "Shockproof AI",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/shockproofai/shockproof-skills.git"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/shockproofai/shockproof-skills/issues"
+  },
+  "homepage": "https://github.com/shockproofai/shockproof-skills#readme"
 }
