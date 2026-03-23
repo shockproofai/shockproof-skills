@@ -1,0 +1,18 @@
+{
+  "name": "shockproof-skills",
+  "owner": {
+    "name": "Shockproof AI"
+  },
+  "plugins": [
+    {
+      "name": "create-html-deck",
+      "source": "./skills/create-html-deck",
+      "description": "Generate Shockproof AI branded training presentation modules as PNG slides or PDF using HTML/CSS flexbox layout with Puppeteer PNG export. Flow-based API — no manual coordinates."
+    },
+    {
+      "name": "convert-pdf-to-html-deck",
+      "source": "./skills/convert-pdf-to-html-deck",
+      "description": "Convert an existing PDF presentation into a narrated Shockproof AI training video. Lossless mode keeps original PDF visuals; semantic mode re-renders every slide with Shockproof AI components."
+    }
+  ]
+}

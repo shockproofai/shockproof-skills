@@ -1,0 +1,11 @@
+{
+  "name": "create-html-deck",
+  "version": "1.0.0",
+  "description": "Generate Shockproof AI branded training presentation modules as PNG slides or PDF using HTML/CSS flexbox layout with Puppeteer PNG export. Flow-based API — no manual coordinates.",
+  "skills": [
+    {
+      "name": "create-html-deck",
+      "path": "../SKILL.md"
+    }
+  ]
+}

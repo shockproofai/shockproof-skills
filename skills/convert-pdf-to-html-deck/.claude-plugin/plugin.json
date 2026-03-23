@@ -1,0 +1,11 @@
+{
+  "name": "convert-pdf-to-html-deck",
+  "version": "1.0.0",
+  "description": "Convert an existing PDF presentation into a narrated Shockproof AI training video. Lossless mode keeps original PDF visuals; semantic mode re-renders every slide with Shockproof AI components.",
+  "skills": [
+    {
+      "name": "convert-pdf-to-html-deck",
+      "path": "../SKILL.md"
+    }
+  ]
+}

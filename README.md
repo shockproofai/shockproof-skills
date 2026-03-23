@@ -1,6 +1,6 @@
 # shockproof-skills
 
-> **A marketplace of Claude Code skills for Shockproof AI presentation and training module generation.**
+> **A private Claude Code plugin marketplace for Shockproof AI presentation and training module generation.**
 
 ---
 
@@ -44,92 +44,66 @@ Convert an existing PDF presentation into a narrated Shockproof AI training vide
 
 ## Installation
 
-> **This is a private GitHub repository.** It is not published to npm. Use one of the methods below.
+> **This is a private GitHub repository.** Teammates must be added as collaborators before they can install.
 
-### Option A — Add as a GitHub dependency (recommended for projects with package.json)
+### Step 1 — Authenticate with GitHub
 
-Add to your project's `package.json` devDependencies:
+Auto-updates require a GitHub token so Claude Code can pull from the private repo in the background:
+
+```bash
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+Add this to your shell profile (`~/.zshrc` or `~/.bashrc`) to persist it.
+
+### Step 2 — Add the marketplace in Claude Code
+
+```
+/plugin marketplace add shockproofai/shockproof-skills
+```
+
+Claude Code will fetch `.claude-plugin/marketplace.json` from the repo and register both plugins.
+
+### Step 3 — Enable the plugins you want
+
+After adding the marketplace, enable individual plugins via the Claude Code plugin UI, or run:
+
+```
+/plugin enable create-html-deck@shockproof-skills
+/plugin enable convert-pdf-to-html-deck@shockproof-skills
+```
+
+### Auto-configure for your project (optional)
+
+To pre-configure the marketplace for everyone working in a project, add this to `.claude/settings.json` in your repo:
 
 ```json
-"devDependencies": {
-  "@shockproofai/shockproof-skills": "github:shockproofai/shockproof-skills"
+{
+  "extraKnownMarketplaces": {
+    "shockproof-skills": {
+      "source": {
+        "source": "github",
+        "repo": "shockproofai/shockproof-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "create-html-deck@shockproof-skills": true,
+    "convert-pdf-to-html-deck@shockproof-skills": true
+  }
 }
 ```
 
-Then install and reference the skill files directly from `node_modules` in your `CLAUDE.md` — **no copying needed**:
-
-```bash
-pnpm install   # or npm install / yarn
-```
-
-```markdown
-<!-- In your project's CLAUDE.md -->
-- [create-html-deck](node_modules/@shockproofai/shockproof-skills/skills/create-html-deck/SKILL.md)
-- [convert-pdf-to-html-deck](node_modules/@shockproofai/shockproof-skills/skills/convert-pdf-to-html-deck/SKILL.md)
-```
-
-The `install` CLI and file-copying are **not needed** when using this method. Skills update automatically when you bump the dependency and re-run `pnpm install`.
-
-Optionally add convenience scripts to your `package.json`:
-
-```json
-"scripts": {
-  "skills:list": "shockproof-skills list"
-}
-```
-
-### Option B — Clone the full repo (for projects without package.json)
-
-```bash
-cd /path/to/your/project/.claude/skills
-git clone https://github.com/shockproofai/shockproof-skills.git
-```
-
-Register skills in your project's `CLAUDE.md`:
-
-```markdown
-- [create-html-deck](.claude/skills/shockproof-skills/skills/create-html-deck/SKILL.md)
-- [convert-pdf-to-html-deck](.claude/skills/shockproof-skills/skills/convert-pdf-to-html-deck/SKILL.md)
-```
-
-Or use the install CLI to copy individual skills into `.claude/skills/`:
-
-```bash
-node .claude/skills/shockproof-skills/scripts/install.js install create-html-deck
-```
-
-### Option C — npm package (for build scripts only)
-
-```bash
-npm install @shockproofai/shockproof-skills
-```
-
-Resolve the shared renderer path in build scripts:
-
-```js
-const { rendererRoot } = require('@shockproofai/shockproof-skills');
-const tpl = require(`${rendererRoot}/scripts/sai_html_template.js`)({
-  seriesTitle: 'My Series',
-  totalModules: 6,
-});
-```
+With this in place, teammates only need to set `GITHUB_TOKEN` — the plugins are enabled automatically when they open the project.
 
 ---
 
-## Setup after installation
+## Keeping skills up to date
 
-### Install shared renderer dependencies
+When updates are pushed to this repo, Claude Code will sync them automatically on startup (if `GITHUB_TOKEN` is set). To manually sync:
 
-```bash
-cd .claude/skills/shockproof-skills/shared/html-slide-renderer
-npm install
 ```
-
-### For convert-pdf-to-html-deck only
-
-```bash
-cd .claude/skills/shockproof-skills/convert-pdf-to-html-deck
-npm install
+/plugin update shockproof-skills
 ```
 
 ---
@@ -138,26 +112,21 @@ npm install
 
 | Key | Used by | How to set |
 |-----|---------|-----------|
-| `ANTHROPIC_API_KEY` | `convert-pdf-to-html-deck` | Export in shell or set in `.env` |
+| `ANTHROPIC_API_KEY` | `convert-pdf-to-html-deck` | Export in shell or GCP Secret Manager |
 | `NARAKEET_API_KEY` | Both skills (video generation) | Export in shell or GCP Secret Manager |
-
-Both keys can be resolved from Google Cloud Secret Manager automatically if `gcloud` is configured.
 
 ---
 
 ## Quick Start — Create a deck
 
-```bash
-# Claude will generate a build script and run it
-# Just ask Claude Code: "create a 6-slide training module on topic X"
-```
+Ask Claude Code: `"create a 6-slide training module on [topic]"`
 
 See [`skills/create-html-deck/SKILL.md`](skills/create-html-deck/SKILL.md) and the [API reference](skills/create-html-deck/references/api_reference.md) for the full component API.
 
 ## Quick Start — Convert a PDF
 
 ```bash
-cd .claude/skills/shockproof-skills/convert-pdf-to-html-deck
+cd skills/convert-pdf-to-html-deck
 
 # Semantic mode (re-render with Shockproof AI brand)
 node scripts/convert.js /path/to/presentation.pdf
@@ -171,36 +140,29 @@ node scripts/convert.js /path/to/presentation.pdf --no-video --output ./my-outpu
 
 ---
 
-## Marketplace files
-
-| File | Purpose |
-|------|---------|
-| [`registry.json`](registry.json) | Machine-readable skill catalog (source of truth) |
-| [`registry.schema.json`](registry.schema.json) | JSON Schema for validating skill registry entries |
-| [`claude-plugin.json`](claude-plugin.json) | Claude Code plugin manifest |
-| [`scripts/install.js`](scripts/install.js) | npx install CLI |
-| [`index.js`](index.js) | npm path helpers (`rendererRoot`, etc.) |
-
----
-
 ## Repository structure
 
 ```
 shockproof-skills/
-├── registry.json                   # Skill catalog
+├── .claude-plugin/
+│   └── marketplace.json            # Claude Code marketplace manifest
+├── registry.json                   # Machine-readable skill catalog
 ├── registry.schema.json            # JSON Schema for registry entries
-├── claude-plugin.json              # Claude Code plugin manifest
 ├── package.json                    # npm package + bin entry
-├── index.js                        # Path helpers
+├── index.js                        # Path helpers (rendererRoot etc.)
 ├── scripts/
-│   └── install.js                  # npx install CLI
+│   └── install.js                  # Fallback install CLI (for non-plugin use)
 ├── skills/
 │   ├── create-html-deck/
+│   │   ├── .claude-plugin/
+│   │   │   └── plugin.json         # Plugin manifest
 │   │   ├── SKILL.md
 │   │   ├── references/
 │   │   │   └── api_reference.md
 │   │   └── mnt/outputs/
 │   ├── convert-pdf-to-html-deck/
+│   │   ├── .claude-plugin/
+│   │   │   └── plugin.json         # Plugin manifest
 │   │   ├── SKILL.md
 │   │   ├── package.json
 │   │   ├── scripts/
