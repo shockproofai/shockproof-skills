@@ -7,6 +7,9 @@
   "bin": {
     "shockproof-skills": "./scripts/install.js"
   },
+  "scripts": {
+    "build:plugin": "node scripts/build-plugin.js"
+  },
   "exports": {
     ".": "./index.js",
     "./registry": "./registry.json",
