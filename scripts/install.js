@@ -59,7 +59,7 @@ function listSkills() {
     console.log(`    Tags: ${tags}\n`);
   }
   console.log(`Install a skill:`);
-  console.log(`  npx @shockproofai/shockproof-skills install <skill-id>\n`);
+  console.log(`  pnpm exec shockproof-skills install <skill-id>\n`);
 }
 
 function installSkill(skillId, targetArg) {
@@ -120,7 +120,7 @@ const command = args[0];
 if (!command || command === 'help' || command === '--help' || command === '-h') {
   console.log(`
 Usage:
-  npx @shockproofai/shockproof-skills <command> [options]
+  pnpm exec shockproof-skills <command> [options]
 
 Commands:
   list                          List all available skills
@@ -129,9 +129,9 @@ Commands:
   help                          Show this help message
 
 Examples:
-  npx @shockproofai/shockproof-skills list
-  npx @shockproofai/shockproof-skills install create-html-deck
-  npx @shockproofai/shockproof-skills install convert-pdf-to-html-deck --target ./my-project
+  pnpm exec shockproof-skills list
+  pnpm exec shockproof-skills install create-html-deck
+  pnpm exec shockproof-skills install convert-pdf-to-html-deck --target ./my-project
 `);
   process.exit(0);
 }
