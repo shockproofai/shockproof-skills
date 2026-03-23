@@ -46,12 +46,23 @@ node scripts/convert.js <pdf-path> [options]
 |-----------|---------|
 | `@anthropic-ai/sdk` | Narration generation + semantic component mapping |
 | `pdf-parse` | Per-page text extraction from PDF |
-| `pdfjs-dist` + local HTTP server | PDF page rasterisation to 1280×720 PNG (no ImageMagick required) |
-| `shared/html-slide-renderer` | HTML rendering, Puppeteer screenshots, Narakeet submission |
+| `pdfjs-dist` | Per-page text extraction (semantic mode) |
+| `shared/html-slide-renderer` | HTML rendering, cloud function PNG screenshots, Narakeet submission |
 | `archiver` (from shared renderer) | ZIP creation for Narakeet upload |
 
+### Required Environment Variables
+
+| Variable | Required for | Notes |
+|----------|-------------|-------|
+| `RENDER_HTML_API_KEY` | PNG rendering (both modes) | API key for the `renderHtmlToPng` cloud function |
+| `ANTHROPIC_API_KEY` | Narration + semantic mode | Claude API key (or set `CLAUDE_CODE_OAUTH_TOKEN`) |
+| `GOOGLE_ACCESS_TOKEN` | Lossless PDF upload | Google access token for Firebase Storage REST API |
+| `NARAKEET_API_KEY` | Video generation | Only needed if using `submitToNarakeet()` |
+
+In Cowork/sandbox environments, set these as env vars. Locally with gcloud, `RENDER_HTML_API_KEY`, `ANTHROPIC_API_KEY`, and `NARAKEET_API_KEY` are auto-resolved from Secret Manager, and `GOOGLE_ACCESS_TOKEN` is auto-resolved via `gcloud auth print-access-token`.
+
 ### Lossless rasterisation approach
-Lossless mode rasterises PDF pages using `pdfjs-dist` (v5) served via a local HTTP server that Puppeteer navigates to. This avoids any dependency on ImageMagick or Ghostscript. Each page is rendered to a `<canvas>` element at the target resolution (1280×720) and screenshotted.
+Lossless mode uploads the PDF to Firebase Storage and calls the `renderHtmlToPng` cloud function in PDF mode. The cloud function uses PDF.js + Puppeteer to render each page to a `<canvas>` at 1280×720 and returns base64 PNGs. No local Puppeteer or ImageMagick dependency is required.
 
 ### Semantic model limitation
 Only `claude-haiku-4-5` reliably accepts PDF document blocks (base64 `application/pdf`) via the Anthropic API in this environment. `claude-sonnet-4-5` returns 400 errors for PDF document inputs. Use the default model or override with `--model claude-haiku-4-5` explicitly.

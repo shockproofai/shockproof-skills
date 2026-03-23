@@ -16,36 +16,42 @@ module.exports = function makePresentation(ctx) {
       },
 
       async toPNGs(outputDir) {
-        let puppeteer;
-        try {
-          puppeteer = require('puppeteer');
-        } catch (e) {
-          try {
-            puppeteer = require(path.join(__dirname, '..', 'node_modules', 'puppeteer'));
-          } catch (e2) {
-            puppeteer = require('/usr/local/lib/node_modules_global/lib/node_modules/puppeteer');
-          }
-        }
+        const { resolveRenderKey } = require('./resolve_render_key');
+
         if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-        const browser = await puppeteer.launch({
-          headless: 'shell',  // 'shell' = lightweight headless (Puppeteer 22+); faster and more stable than full headless
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
-          protocolTimeout: 120000,  // 2 min — prevents screenshot timeout on slow/busy systems
+
+        // Collect all slide HTML strings
+        const htmlStrings = slides.map(s => s.htmlString());
+
+        // Resolve API key and call cloud function
+        const apiKey = await resolveRenderKey();
+        const cloudUrl = process.env.RENDER_HTML_URL ||
+          'https://us-central1-shockproof-dev.cloudfunctions.net/renderHtmlToPng';
+
+        console.log(`  Rendering ${slides.length} slides via cloud function...`);
+        const response = await fetch(cloudUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+          },
+          body: JSON.stringify({ slides: htmlStrings, width: W, height: H }),
         });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Cloud render failed (${response.status}): ${errorText}`);
+        }
+
+        const { pngs } = await response.json();
+
+        // Write PNGs to disk
         const paths = [];
-        try {
-          const page = await browser.newPage();
-          await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });
-          for (let i = 0; i < slides.length; i++) {
-            const html = slides[i].htmlString();
-            await page.setContent(html, { waitUntil: 'domcontentloaded' });
-            const outPath = path.join(outputDir, `slide_${String(i + 1).padStart(3, '0')}.png`);
-            await page.screenshot({ path: outPath, type: 'png' });
-            console.log(`  Rendered slide ${i + 1}/${slides.length} → ${path.basename(outPath)}`);
-            paths.push(outPath);
-          }
-        } finally {
-          await browser.close();
+        for (let i = 0; i < pngs.length; i++) {
+          const outPath = path.join(outputDir, `slide_${String(i + 1).padStart(3, '0')}.png`);
+          fs.writeFileSync(outPath, Buffer.from(pngs[i], 'base64'));
+          console.log(`  Rendered slide ${i + 1}/${slides.length} → ${path.basename(outPath)}`);
+          paths.push(outPath);
         }
         console.log(`✓ ${slides.length} PNGs saved to: ${outputDir}`);
 
@@ -207,7 +213,7 @@ module.exports = function makePresentation(ctx) {
       },
 
       // ── Narakeet API submission ──────────────────────────────────────────
-      // Retrieves NARAKEET_API_KEY from env or Google Secret Manager,
+      // Retrieves NARAKEET_API_KEY from env or gcloud CLI,
       // uploads the narakeet.zip, polls for completion, downloads the .mp4.
       async submitToNarakeet(outputDir, opts = {}) {
         const NARAKEET_BASE = 'https://api.narakeet.com';
@@ -218,67 +224,31 @@ module.exports = function makePresentation(ctx) {
         }
 
         // ── 1. Resolve API key ──────────────────────────────────────────
-        // Priority: env var → gcloud CLI → Secret Manager Node client
+        // Priority: env var → gcloud CLI (no Secret Manager Node client needed)
         let apiKey = process.env.NARAKEET_API_KEY;
         if (!apiKey) {
-          // Try gcloud CLI first — works even when Node client has stale RAPT tokens
-          const { execSync } = require('child_process');
-          const projectId = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
-          const gcpProject = projectId || (() => {
-            try { return execSync('gcloud config get-value project 2>/dev/null', { encoding: 'utf8' }).trim(); }
-            catch { return null; }
-          })();
-
-          if (gcpProject) {
-            try {
-              console.log(`  Fetching NARAKEET_API_KEY via gcloud CLI (project: ${gcpProject})...`);
+          try {
+            const { execSync } = require('child_process');
+            const projectId =
+              process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || process.env.GOOGLE_CLOUD_PROJECT ||
+              execSync('gcloud config get-value project 2>/dev/null', { encoding: 'utf8' }).trim();
+            if (projectId) {
+              console.log(`  Fetching NARAKEET_API_KEY via gcloud CLI (project: ${projectId})...`);
               apiKey = execSync(
-                `gcloud secrets versions access latest --secret=NARAKEET_API_KEY --project=${gcpProject} 2>/dev/null`,
+                `gcloud secrets versions access latest --secret=NARAKEET_API_KEY --project=${projectId} 2>/dev/null`,
                 { encoding: 'utf8', timeout: 15000 }
               ).trim();
               if (apiKey) {
-                const preview = apiKey.length > 8
-                  ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`
-                  : 'TOO_SHORT';
+                const preview = apiKey.length > 8 ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}` : 'TOO_SHORT';
                 console.log(`  Fetched NARAKEET_API_KEY via gcloud CLI (${preview})`);
               }
-            } catch (e) {
-              console.log('  gcloud CLI failed, trying Secret Manager Node client...');
-              apiKey = null;
             }
+          } catch {
+            // gcloud not available — expected in sandbox environments
           }
-
-          // Fallback: Secret Manager Node.js client
-          if (!apiKey) {
-            if (!gcpProject) {
-              throw new Error(
-                'No NARAKEET_API_KEY env var and no GCP project ID found. ' +
-                'Set NARAKEET_API_KEY, run gcloud init, or set GCLOUD_PROJECT.'
-              );
-            }
-            const skillNM = path.join(__dirname, '..', 'node_modules');
-            let SecretManagerServiceClient;
-            try {
-              SecretManagerServiceClient = require('@google-cloud/secret-manager').SecretManagerServiceClient;
-            } catch (e) {
-              try {
-                SecretManagerServiceClient = require(path.join(skillNM, '@google-cloud/secret-manager')).SecretManagerServiceClient;
-              } catch (e2) {
-                throw new Error('Cannot load @google-cloud/secret-manager and gcloud CLI failed — set NARAKEET_API_KEY env var');
-              }
-            }
-            console.log(`  Fetching NARAKEET_API_KEY via Secret Manager client (project: ${gcpProject})...`);
-            const smClient = new SecretManagerServiceClient();
-            const [res] = await smClient.accessSecretVersion({
-              name: `projects/${gcpProject}/secrets/NARAKEET_API_KEY/versions/latest`,
-            });
-            if (!res.payload?.data) throw new Error('NARAKEET_API_KEY secret has no payload');
-            apiKey = res.payload.data.toString().trim();
-            const preview = apiKey.length > 8
-              ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`
-              : 'TOO_SHORT';
-            console.log(`  Fetched NARAKEET_API_KEY via Secret Manager client (${preview})`);
-          }
+        }
+        if (!apiKey) {
+          throw new Error('No NARAKEET_API_KEY available. Set the NARAKEET_API_KEY environment variable.');
         }
 
         let axios;

@@ -1,192 +1,106 @@
 'use strict';
 const fs     = require('fs');
 const path   = require('path');
-const http   = require('http');
-const os     = require('os');
 
 const RENDERER_ROOT = path.join(__dirname, '../../shared/html-slide-renderer');
 const SKILL_ROOT    = path.join(__dirname, '..');
-const PDFJS_DIR     = path.join(SKILL_ROOT, 'node_modules', 'pdfjs-dist', 'build');
 
 /**
- * Resolve puppeteer — try local node_modules, then shared renderer's.
+ * Resolve a Google access token for Storage REST API.
+ * Priority: GOOGLE_ACCESS_TOKEN env var → gcloud CLI fallback.
  */
-function getPuppeteer() {
-  try { return require('puppeteer'); } catch { /* fall through */ }
-  return require(path.join(RENDERER_ROOT, 'node_modules', 'puppeteer'));
+function resolveAccessToken() {
+  if (process.env.GOOGLE_ACCESS_TOKEN) {
+    return process.env.GOOGLE_ACCESS_TOKEN;
+  }
+  // Fall back to gcloud CLI if available
+  try {
+    const { execSync } = require('child_process');
+    return execSync('gcloud auth print-access-token 2>/dev/null', { encoding: 'utf8', timeout: 10000 }).trim();
+  } catch {
+    throw new Error(
+      'No Google access token available. Set GOOGLE_ACCESS_TOKEN env var, ' +
+      'or install gcloud CLI and run: gcloud auth application-default login'
+    );
+  }
 }
 
 /**
- * Start a minimal static HTTP server.
- * Returns { server, port, stop }.
+ * Upload a file to Firebase Storage via the JSON API (no gcloud CLI required).
  */
-function startServer(serveDir, pdfPath) {
-  const mimeMap = {
-    '.html': 'text/html',
-    '.js':   'application/javascript',
-    '.mjs':  'application/javascript',
-    '.pdf':  'application/pdf',
-    '.png':  'image/png',
-  };
+async function uploadToStorage(localPath, storagePath, bucket) {
+  const accessToken = resolveAccessToken();
+  const fileBuffer = fs.readFileSync(localPath);
+  const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(storagePath)}`;
 
-  const server = http.createServer((req, res) => {
-    let filePath;
-    if (req.url === '/pdf') {
-      filePath = pdfPath;
-    } else {
-      filePath = path.join(serveDir, req.url.split('?')[0]);
-    }
-
-    if (!fs.existsSync(filePath)) {
-      res.writeHead(404); res.end('Not found: ' + req.url); return;
-    }
-
-    const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, {
-      'Content-Type': mimeMap[ext] || 'application/octet-stream',
-      'Access-Control-Allow-Origin': '*',
-    });
-    fs.createReadStream(filePath).pipe(res);
+  const response = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/pdf',
+      'Content-Length': String(fileBuffer.length),
+    },
+    body: fileBuffer,
   });
 
-  return new Promise((resolve) => {
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address();
-      resolve({
-        server,
-        port,
-        stop: () => new Promise(r => server.close(r)),
-      });
-    });
-  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Storage upload failed (${response.status}): ${errorText}`);
+  }
 }
 
 /**
- * Rasterise every page of a PDF to 1280×720 PNG files using PDF.js + Puppeteer.
- * Files are named slide_001.png, slide_002.png, …
+ * Rasterise every page of a PDF to 1280x720 PNG files via the renderHtmlToPng
+ * cloud function. The PDF is uploaded to Firebase Storage via REST API, then the
+ * cloud function renders each page using PDF.js and returns base64 PNGs.
+ * Files are named slide_001.png, slide_002.png, ...
  */
 async function extractPNGs(pdfPath, outputDir) {
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-  const puppeteer = getPuppeteer();
+  const { resolveRenderKey } = require(path.join(RENDERER_ROOT, 'scripts', 'resolve_render_key'));
 
-  // Write a renderer HTML to a temp dir so we can serve it
-  const serveDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pdf-render-'));
+  // Upload PDF to Firebase Storage temp path via REST API
+  const pdfFilename = `tmp/render-pdf-${Date.now()}-${path.basename(pdfPath)}`;
+  const bucket = 'shockproof-dev.firebasestorage.app';
 
-  // Copy pdfjs build files to temp dir
-  fs.cpSync(PDFJS_DIR, path.join(serveDir, 'pdfjs'), { recursive: true });
+  console.log(`  Uploading PDF to Storage: ${pdfFilename}...`);
+  await uploadToStorage(pdfPath, pdfFilename, bucket);
 
-  // Write the renderer HTML
-  const rendererHtml = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: white; width: 1280px; height: 720px; overflow: hidden; }
-  canvas { display: block; }
-</style>
-</head>
-<body>
-<canvas id="c" width="1280" height="720"></canvas>
-<script type="module">
-import * as pdfjsLib from '/pdfjs/pdf.mjs';
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.mjs';
+  // Call cloud function with Storage path
+  const apiKey = await resolveRenderKey();
+  const cloudUrl = process.env.RENDER_HTML_URL ||
+    'https://us-central1-shockproof-dev.cloudfunctions.net/renderHtmlToPng';
 
-window._pdfjsLib = pdfjsLib;
-window._pdfReady = true;
-</script>
-</body>
-</html>`;
-
-  fs.writeFileSync(path.join(serveDir, 'index.html'), rendererHtml);
-
-  const { port, stop } = await startServer(serveDir, pdfPath);
-
-  console.log(`  Launching Puppeteer (HTTP server on port ${port})...`);
-
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  console.log(`  Rendering PDF pages via cloud function...`);
+  const response = await fetch(cloudUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+    },
+    body: JSON.stringify({ pdfStoragePath: pdfFilename, width: 1280, height: 720 }),
   });
 
-  try {
-    const pageCount = await getPDFPageCount(pdfPath);
-    console.log(`  PDF has ${pageCount} page(s). Rendering each to 1280×720 PNG...`);
-
-    const pdfBase64 = fs.readFileSync(pdfPath).toString('base64');
-    const pngPaths  = [];
-    const W = 1280;
-    const H = 720;
-
-    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      const tab = await browser.newPage();
-      await tab.setViewport({ width: W, height: H });
-
-      // Navigate to our local renderer page
-      await tab.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'networkidle0', timeout: 15000 });
-
-      // Wait for PDF.js module to initialise
-      await tab.waitForFunction(() => window._pdfReady === true, { timeout: 10000 });
-
-      // Render one page
-      const result = await tab.evaluate(async (b64, pNum, targetW, targetH) => {
-        try {
-          const pdfjsLib = window._pdfjsLib;
-          const pdfData  = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-          const doc      = await pdfjsLib.getDocument({ data: pdfData, useSystemFonts: true }).promise;
-          const pdfPage  = await doc.getPage(pNum);
-
-          const vp0      = pdfPage.getViewport({ scale: 1 });
-          const scale    = Math.min(targetW / vp0.width, targetH / vp0.height);
-          const viewport = pdfPage.getViewport({ scale });
-
-          const canvas   = document.getElementById('c');
-          canvas.width   = targetW;
-          canvas.height  = targetH;
-          const ctx      = canvas.getContext('2d');
-          ctx.fillStyle  = 'white';
-          ctx.fillRect(0, 0, targetW, targetH);
-
-          const offsetX  = Math.floor((targetW - viewport.width)  / 2);
-          const offsetY  = Math.floor((targetH - viewport.height) / 2);
-
-          await pdfPage.render({
-            canvasContext: ctx,
-            viewport,
-            transform: [1, 0, 0, 1, offsetX, offsetY],
-          }).promise;
-
-          return { ok: true };
-        } catch (e) {
-          return { ok: false, error: e.message };
-        }
-      }, pdfBase64, pageNum, W, H);
-
-      if (!result.ok) {
-        console.warn(`  Warning: page ${pageNum} render issue: ${result.error}`);
-      }
-
-      const dest = path.join(outputDir, `slide_${String(pageNum).padStart(3, '0')}.png`);
-      await tab.screenshot({
-        path: dest,
-        type: 'png',
-        clip: { x: 0, y: 0, width: W, height: H },
-      });
-      await tab.close();
-      pngPaths.push(dest);
-      process.stdout.write(`  Rendered page ${pageNum}/${pageCount}\r`);
-    }
-
-    console.log(`\n  Extracted ${pngPaths.length} slide PNGs`);
-    return pngPaths;
-
-  } finally {
-    await browser.close();
-    await stop();
-    // Clean up temp dir
-    try { fs.rmSync(serveDir, { recursive: true, force: true }); } catch {}
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Cloud PDF render failed (${response.status}): ${errorText}`);
   }
+
+  const { pngs, pageCount } = await response.json();
+  console.log(`  PDF has ${pageCount} page(s).`);
+
+  // Write PNGs to disk
+  const pngPaths = [];
+  for (let i = 0; i < pngs.length; i++) {
+    const dest = path.join(outputDir, `slide_${String(i + 1).padStart(3, '0')}.png`);
+    fs.writeFileSync(dest, Buffer.from(pngs[i], 'base64'));
+    pngPaths.push(dest);
+    console.log(`  Rendered page ${i + 1}/${pageCount}`);
+  }
+
+  console.log(`  Extracted ${pngPaths.length} slide PNGs`);
+  return pngPaths;
 }
 
 /**

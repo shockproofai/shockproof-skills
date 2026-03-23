@@ -3,7 +3,7 @@ name: create-html-deck
 description: >
   Generate Shockproof AI branded training presentation modules as a folder of PNG slide images,
   with optional PDF assembly. Slides are rendered as HTML/CSS with flexbox, grid, and dynamic font
-  sizing, then screenshotted to PNG via Puppeteer. Use this skill whenever the user asks for a
+  sizing, then screenshotted to PNG via a cloud function. Use this skill whenever the user asks for a
   Shockproof AI presentation, training module, or course deck as images or a PDF.
   Triggers on: "create a module", "build a presentation", "training deck", "Shockproof deck",
   "SAI slides", "HTML deck", or any request for a branded training presentation.
@@ -15,7 +15,7 @@ user-invocable: true
 
 # Shockproof AI HTML Deck Builder
 
-This skill generates professional training module PDFs with Shockproof AI branding. Each slide is built as an HTML/CSS page at 1280×720 px and screenshotted to PNG via Puppeteer. PNGs are assembled into a PDF using `pdf-lib`.
+This skill generates professional training module PDFs with Shockproof AI branding. Each slide is built as an HTML/CSS page at 1280×720 px and rendered to PNG via a cloud function (`renderHtmlToPng`). PNGs are assembled into a PDF using `pdf-lib`.
 
 ## Layout Model
 
@@ -27,9 +27,17 @@ This skill uses a **flow-based layout API** — components auto-stack in a flexb
 | Text wrapping | Native CSS word-wrap and line-clamp |
 | Component placement | Auto-stacked in flex column; vertically centered |
 | Multi-column layouts | `startRow()` / `cardHtml()` helpers |
-| Rendering | HTML/CSS → Puppeteer screenshot → PNG |
-| Dependencies | puppeteer (v22+), pdf-lib |
-| Puppeteer mode | `headless: 'shell'` — use the lightweight headless shell, NOT `'new'` or `true` |
+| Rendering | HTML/CSS → cloud function (`renderHtmlToPng`) → PNG |
+| Dependencies | pdf-lib |
+
+## Required Environment Variables
+
+| Variable | Required for | Notes |
+|----------|-------------|-------|
+| `RENDER_HTML_API_KEY` | PNG rendering | API key for the `renderHtmlToPng` cloud function |
+| `NARAKEET_API_KEY` | Video generation | Only needed if using `submitToNarakeet()` |
+
+In Cowork/sandbox environments, set these as env vars. Locally with gcloud, they are auto-resolved from Secret Manager.
 
 ## Renderer Location
 

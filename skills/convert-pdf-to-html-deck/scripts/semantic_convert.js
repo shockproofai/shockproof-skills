@@ -156,6 +156,89 @@ Output ONLY the JavaScript code. No markdown fences, no explanation.`;
   // If starts with ``` (bare), strip it
   script = script.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
 
+  // Detect truncation: if toPNGsAndPDF is missing, run a continuation pass
+  if (!script.includes('toPNGsAndPDF')) {
+    console.log('  ⚠ Script truncated (hit token limit). Running continuation pass...');
+
+    // Find the last complete slide block (ends with .narrate("..."); )
+    // A complete slide has a .narrate() call closed with );
+    const completedMatches = [...script.matchAll(/\/\/ Slide (\d+):/g)];
+    let partialScript = script;
+    let lastCompleteSlide = 0;
+
+    if (completedMatches.length > 1) {
+      // Find last slide block that contains a complete .narrate() call
+      for (let i = completedMatches.length - 1; i >= 0; i--) {
+        const startPos = completedMatches[i].index;
+        const endPos = i + 1 < completedMatches.length ? completedMatches[i + 1].index : script.length;
+        const block = script.slice(startPos, endPos);
+        if (/\.narrate\(["'`]/.test(block) && /\);/.test(block.split('.narrate(')[1] || '')) {
+          lastCompleteSlide = parseInt(completedMatches[i][1], 10);
+          // Truncate script to end of this complete block
+          const nextSlideStart = i + 1 < completedMatches.length ? completedMatches[i + 1].index : script.length;
+          partialScript = script.slice(0, nextSlideStart).trimEnd();
+          break;
+        }
+      }
+    }
+
+    if (lastCompleteSlide > 0) {
+      const contPrompt = `You are continuing a partially-generated Node.js build script for a Shockproof AI HTML deck.
+
+The script was cut off after slide ${lastCompleteSlide}. Continue it from slide ${lastCompleteSlide + 1} to the end of the PDF.
+
+## IMPORTANT
+- Output ONLY the continuation code — no require() statements, no const tpl/pres declarations, no MODULE_NUM/MODULE_TITLE/TOTAL_PAGES redeclarations
+- Use the same variable names already in scope: pres, MODULE_NUM, MODULE_TITLE, TOTAL_PAGES, and all imported functions
+- End the continuation with exactly:
+  pres.toPNGsAndPDF("${outputDirAbs}/", "${outputDirAbs}/../${path.basename(pdfPath, '.pdf')}.pdf")
+    .then(() => console.log('\\n✅ Build complete'))
+    .catch(err => { console.error('❌', err.message); process.exit(1); });
+
+## Variable declaration order rule
+ALWAYS declare the slide variable BEFORE using it:
+  const slideN = pres.addSlide(); // ✅ declare first
+  addChrome(slideN, pres, ...);   // then use
+
+## Here is the script so far (for context on style and what was already generated):
+${partialScript}
+
+Output ONLY the continuation JavaScript code. No markdown fences, no explanation.`;
+
+      const contResponse = await client.messages.create({
+        model: opts.model || 'claude-haiku-4-5',
+        max_tokens: 8192,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
+            },
+            { type: 'text', text: contPrompt },
+          ],
+        }],
+      });
+
+      let continuation = contResponse.content[0].text.trim();
+      continuation = continuation.replace(/^```(?:javascript|js)?\s*\n/im, '').replace(/\n```\s*$/im, '').trim();
+      continuation = continuation.replace(/^```\s*\n?/, '').replace(/\n?```\s*$/, '').trim();
+
+      // Remove any re-declarations of variables already in scope
+      continuation = continuation
+        .replace(/^const tpl\s*=[\s\S]*?;\n/m, '')
+        .replace(/^const \{[\s\S]*?\} = tpl;\n/m, '')
+        .replace(/^const pres\s*=.*;\n/m, '')
+        .replace(/^const MODULE_NUM\s*=.*;\n/m, '')
+        .replace(/^const MODULE_TITLE\s*=.*;\n/m, '')
+        .replace(/^const TOTAL_PAGES\s*=.*;\n/m, '')
+        .trim();
+
+      script = partialScript + '\n\n' + continuation;
+      console.log(`✓ Continuation generated (slides ${lastCompleteSlide + 1}+)`);
+    }
+  }
+
   const scriptPath = path.join(outputDir, 'build_script_generated.js');
   fs.writeFileSync(scriptPath, script);
   console.log(`✓ Build script generated: ${scriptPath}`);
