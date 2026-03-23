@@ -44,21 +44,40 @@ Convert an existing PDF presentation into a narrated Shockproof AI training vide
 
 ## Installation
 
-### Option A — Install a single skill via npx
+> **This is a private GitHub repository.** It is not published to npm. Use one of the methods below.
 
-```bash
-# List available skills
-npx @shockproofai/shockproof-skills list
+### Option A — Add as a GitHub dependency (recommended)
 
-# Install a skill into the nearest .claude/skills/ directory
-npx @shockproofai/shockproof-skills install create-html-deck
-npx @shockproofai/shockproof-skills install convert-pdf-to-html-deck
+Add to your project's `package.json` devDependencies:
 
-# Install to a custom path
-npx @shockproofai/shockproof-skills install create-html-deck --target ./my-project/.claude/skills
+```json
+"devDependencies": {
+  "@shockproofai/shockproof-skills": "github:shockproofai/shockproof-skills"
+}
 ```
 
-The installer copies the skill directory (and shared dependencies) into `.claude/skills/shockproof-skills/` and prints the `CLAUDE.md` registration snippet.
+Then install and use the CLI:
+
+```bash
+pnpm install   # or npm install / yarn
+
+# List available skills
+pnpm run skills:list
+# or: pnpm exec shockproof-skills list
+
+# Install a skill
+pnpm run skills:install create-html-deck
+# or: pnpm exec shockproof-skills install create-html-deck
+```
+
+Add convenience scripts to your `package.json`:
+
+```json
+"scripts": {
+  "skills:list": "shockproof-skills list",
+  "skills:install": "shockproof-skills install"
+}
+```
 
 ### Option B — Clone the full repo
 
