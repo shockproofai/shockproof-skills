@@ -37,7 +37,7 @@ This skill uses a **flow-based layout API** — components auto-stack in a flexb
 | `RENDER_HTML_API_KEY` | PNG rendering | API key for the `renderHtmlToPng` cloud function |
 | `NARAKEET_API_KEY` | Video generation | Only needed if using `submitToNarakeet()` |
 
-In Cowork/sandbox environments, set these as env vars. Locally with gcloud, they are auto-resolved from Secret Manager.
+See [SETUP.md](../SETUP.md) for how to generate these values and for local development notes.
 
 ## Renderer Location
 

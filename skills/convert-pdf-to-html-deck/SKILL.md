@@ -59,20 +59,7 @@ node scripts/convert.js <pdf-path> [options]
 | `GCS_SERVICE_ACCOUNT_KEY` | Lossless PDF upload | Base64-encoded GCP service account JSON key with Storage write access |
 | `NARAKEET_API_KEY` | Video generation | Only needed if using `submitToNarakeet()` |
 
-In Cowork/sandbox environments, set these as env vars. Locally with gcloud, `RENDER_HTML_API_KEY`, `ANTHROPIC_API_KEY`, and `NARAKEET_API_KEY` are auto-resolved from Secret Manager, and `GCS_SERVICE_ACCOUNT_KEY` is not needed (gcloud auth is used instead).
-
-To generate `GCS_SERVICE_ACCOUNT_KEY`:
-```bash
-# Create service account and grant Storage access
-gcloud iam service-accounts create skills-storage-upload --display-name="Skills Storage Upload" --project=shockproof-dev
-gcloud projects add-iam-policy-binding shockproof-dev --member="serviceAccount:skills-storage-upload@shockproof-dev.iam.gserviceaccount.com" --role="roles/storage.objectCreator"
-
-# Generate key and base64-encode it
-gcloud iam service-accounts keys create /tmp/sa-key.json --iam-account=skills-storage-upload@shockproof-dev.iam.gserviceaccount.com
-cat /tmp/sa-key.json | base64 | tr -d '\n'
-# Copy the output as your GCS_SERVICE_ACCOUNT_KEY value, then delete the key file
-rm /tmp/sa-key.json
-```
+See [SETUP.md](../SETUP.md) for how to generate these values and for local development notes.
 
 ### Lossless rasterisation approach
 Lossless mode uploads the PDF to Firebase Storage and calls the `renderHtmlToPng` cloud function in PDF mode. The cloud function uses PDF.js + Puppeteer to render each page to a `<canvas>` at 1280×720 and returns base64 PNGs. No local Puppeteer or ImageMagick dependency is required.
