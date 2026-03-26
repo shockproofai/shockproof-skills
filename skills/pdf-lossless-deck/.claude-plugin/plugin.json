@@ -1,0 +1,8 @@
+{
+  "name": "pdf-lossless-deck",
+  "version": "1.0.0",
+  "description": "Convert a PDF presentation into a narrated training video. Keeps original PDF page visuals as PNGs, generates AI narration, and submits to Narakeet for video production.",
+  "author": {
+    "name": "Shockproof AI"
+  }
+}
