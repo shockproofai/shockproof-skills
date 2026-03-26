@@ -49,23 +49,40 @@ node scripts/convert.js <pdf-path> [options]
 | `pdfjs-dist` | Per-page text extraction (semantic mode) |
 | `shared/html-slide-renderer` | HTML rendering, cloud function PNG screenshots, Narakeet submission |
 | `archiver` (from shared renderer) | ZIP creation for Narakeet upload |
+| `pdftoppm` (system, poppler-utils) | **Lossless mode only** — local PDF rasterisation, no cloud call needed |
+
+### System dependency (lossless mode)
+
+`pdftoppm` must be installed locally:
+```bash
+# macOS
+brew install poppler
+
+# Ubuntu / Debian
+apt-get install poppler-utils
+```
 
 ### Required Environment Variables
 
 | Variable | Required for | Notes |
 |----------|-------------|-------|
-| `RENDER_HTML_API_KEY` | PNG rendering (both modes) | API key for the `renderHtmlToPng` cloud function |
+| `RENDER_HTML_API_KEY` | PNG rendering (semantic mode only) | API key for the `renderHtmlToPng` cloud function |
 | `ANTHROPIC_API_KEY` | Narration + semantic mode | Claude API key (or set `CLAUDE_CODE_OAUTH_TOKEN`) |
-| `GCS_SERVICE_ACCOUNT_KEY` | Lossless PDF upload | Base64-encoded GCP service account JSON key with Storage write access |
 | `NARAKEET_API_KEY` | Video generation | Only needed if using `submitToNarakeet()` |
+
+`GCS_SERVICE_ACCOUNT_KEY` is **no longer required** for lossless mode. Lossless rasterisation runs fully locally via `pdftoppm`.
 
 See [SETUP.md](../SETUP.md) for how to generate these values and for local development notes.
 
 ### Lossless rasterisation approach
-Lossless mode uploads the PDF to Firebase Storage and calls the `renderHtmlToPng` cloud function in PDF mode. The cloud function uses PDF.js + Puppeteer to render each page to a `<canvas>` at 1280×720 and returns base64 PNGs. No local Puppeteer or ImageMagick dependency is required.
+Lossless mode runs `pdftoppm` locally to rasterise each PDF page to a 1280px-wide PNG (height follows the slide's native aspect ratio — a 16:9 deck produces 1280×720 PNGs). This is a single local process with no network round-trips, no Firebase Storage upload, and no cloud function invocation, making it significantly faster than the previous PDF.js + cloud-function approach.
 
-### Semantic model limitation
-Only `claude-haiku-4-5` reliably accepts PDF document blocks (base64 `application/pdf`) via the Anthropic API in this environment. `claude-sonnet-4-5` returns 400 errors for PDF document inputs. Use the default model or override with `--model claude-haiku-4-5` explicitly.
+### Model usage by mode
+
+| Mode | Model | Reason |
+|------|-------|--------|
+| Lossless narration | `claude-sonnet-4-6` | Plain text input — any model works; Sonnet gives better narration quality |
+| Semantic | `claude-haiku-4-5` | Must send PDF document blocks (base64 `application/pdf`); Sonnet returns 400 errors for PDF document inputs |
 
 ## Shared renderer
 

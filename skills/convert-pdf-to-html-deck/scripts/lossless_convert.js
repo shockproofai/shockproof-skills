@@ -27,20 +27,26 @@ async function generateNarration(pages, apiKey) {
     baseURL: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
   });
 
-  const pageList = pages
-    .map((text, i) => `--- Page ${i + 1} ---\n${text || '(no extractable text)'}`)
-    .join('\n\n');
+  const BATCH_SIZE = 10;
+  const narrations = [];
 
-  console.log(`  Sending ${pages.length} pages to Claude for narration...`);
+  for (let start = 0; start < pages.length; start += BATCH_SIZE) {
+    const batch = pages.slice(start, start + BATCH_SIZE);
+    const batchEnd = Math.min(start + BATCH_SIZE, pages.length);
+    console.log(`  Sending pages ${start + 1}–${batchEnd} of ${pages.length} to Claude for narration...`);
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 8096,
-    messages: [{
-      role: 'user',
-      content: `You are writing spoken narration for a training presentation video.
+    const pageList = batch
+      .map((text, i) => `--- Page ${start + i + 1} ---\n${text || '(no extractable text)'}`)
+      .join('\n\n');
 
-Below is the text content extracted from each page of a PDF presentation.
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8192,
+      messages: [{
+        role: 'user',
+        content: `You are writing spoken narration for a training presentation video.
+
+Below is the text content extracted from ${batch.length} page(s) of a PDF presentation.
 For EACH page, write 2–4 sentences of natural spoken narration suitable for a narrator presenting the slide.
 
 Rules:
@@ -54,23 +60,24 @@ You MUST also follow all of the narration principles below:
 
 ${NARRATION_PRINCIPLES}
 
-Respond with a JSON array of strings, one narration per page, in the same order as the pages.
+Respond with a JSON array of exactly ${batch.length} strings, one narration per page, in the same order as the pages.
 Example: ["Narration for page 1.", "Narration for page 2.", ...]
 
 Page content:
 ${pageList}`,
-    }],
-  });
+      }],
+    });
 
-  const raw = response.content[0].text.trim();
+    const raw = response.content[0].text.trim();
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error(`Claude did not return a valid JSON array for pages ${start + 1}–${batchEnd}`);
 
-  // Parse JSON from response (may be wrapped in markdown code block)
-  const jsonMatch = raw.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) throw new Error('Claude did not return a valid JSON array for narration');
+    const batchNarrations = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(batchNarrations) || batchNarrations.length !== batch.length) {
+      throw new Error(`Expected ${batch.length} narrations for pages ${start + 1}–${batchEnd}, got ${batchNarrations.length}`);
+    }
 
-  const narrations = JSON.parse(jsonMatch[0]);
-  if (!Array.isArray(narrations) || narrations.length !== pages.length) {
-    throw new Error(`Expected ${pages.length} narrations, got ${narrations.length}`);
+    narrations.push(...batchNarrations);
   }
 
   console.log(`  Generated narration for ${narrations.length} slides`);

@@ -1,150 +1,62 @@
 'use strict';
-const fs     = require('fs');
-const path   = require('path');
-const crypto = require('crypto');
+const fs   = require('fs');
+const path = require('path');
 
-const RENDERER_ROOT = path.join(__dirname, '../../shared/html-slide-renderer');
-const SKILL_ROOT    = path.join(__dirname, '..');
-
-// ── Google access token minting from service account key ────────────────────
+const SKILL_ROOT = path.join(__dirname, '..');
 
 /**
- * Mint a short-lived Google access token from a service account JSON key.
- * Uses the OAuth2 JWT bearer flow — no SDK or gcloud CLI needed.
- */
-async function mintAccessTokenFromServiceAccount(keyJson) {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const payload = {
-    iss: keyJson.client_email,
-    scope: 'https://www.googleapis.com/auth/devstorage.read_write',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-  };
-
-  const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-  const unsigned = `${encode(header)}.${encode(payload)}`;
-
-  const sign = crypto.createSign('RSA-SHA256');
-  sign.update(unsigned);
-  const signature = sign.sign(keyJson.private_key, 'base64url');
-
-  const jwt = `${unsigned}.${signature}`;
-
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
-  });
-
-  if (!tokenRes.ok) {
-    const err = await tokenRes.text();
-    throw new Error(`Failed to mint access token: ${tokenRes.status} ${err}`);
-  }
-
-  const { access_token } = await tokenRes.json();
-  return access_token;
-}
-
-/**
- * Resolve a Google access token for Storage REST API.
- * Priority: GCS_SERVICE_ACCOUNT_KEY env var (base64 JSON) → gcloud CLI fallback.
- */
-async function resolveAccessToken() {
-  // 1. Service account key (base64-encoded JSON) — works in Cowork/sandbox
-  if (process.env.GCS_SERVICE_ACCOUNT_KEY) {
-    const keyJson = JSON.parse(
-      Buffer.from(process.env.GCS_SERVICE_ACCOUNT_KEY, 'base64').toString('utf8')
-    );
-    return mintAccessTokenFromServiceAccount(keyJson);
-  }
-
-  // 2. gcloud CLI fallback (local dev only)
-  try {
-    const { execSync } = require('child_process');
-    return execSync('gcloud auth print-access-token 2>/dev/null', { encoding: 'utf8', timeout: 10000 }).trim();
-  } catch {
-    throw new Error(
-      'No GCS credentials available. Set GCS_SERVICE_ACCOUNT_KEY env var ' +
-      '(base64-encoded service account JSON), or install gcloud CLI.'
-    );
-  }
-}
-
-/**
- * Upload a file to Firebase Storage via the JSON API (no gcloud CLI required).
- */
-async function uploadToStorage(localPath, storagePath, bucket) {
-  const accessToken = await resolveAccessToken();
-  const fileBuffer = fs.readFileSync(localPath);
-  const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o?uploadType=media&name=${encodeURIComponent(storagePath)}`;
-
-  const response = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/pdf',
-      'Content-Length': String(fileBuffer.length),
-    },
-    body: fileBuffer,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Storage upload failed (${response.status}): ${errorText}`);
-  }
-}
-
-/**
- * Rasterise every page of a PDF to 1280x720 PNG files via the renderHtmlToPng
- * cloud function. The PDF is uploaded to Firebase Storage via REST API, then the
- * cloud function renders each page using PDF.js and returns base64 PNGs.
+ * Rasterise every page of a PDF to 1280px-wide PNG files using pdftoppm
+ * (part of the poppler-utils package). Runs entirely locally — no network
+ * calls, no cloud function, no GCS credentials required.
+ *
+ * Install poppler:
+ *   macOS:  brew install poppler
+ *   Ubuntu: apt-get install poppler-utils
+ *
  * Files are named slide_001.png, slide_002.png, ...
  */
 async function extractPNGs(pdfPath, outputDir) {
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-  const { resolveRenderKey } = require(path.join(RENDERER_ROOT, 'scripts', 'resolve_render_key'));
+  const { spawnSync } = require('child_process');
 
-  // Upload PDF to Firebase Storage temp path via REST API
-  const pdfFilename = `tmp/render-pdf-${Date.now()}-${path.basename(pdfPath)}`;
-  const bucket = 'shockproof-dev.firebasestorage.app';
+  // pdftoppm -scale-to-x 1280 scales the page width to 1280px (height follows
+  // aspect ratio, so a 16:9 PDF produces 1280×720 PNGs automatically).
+  // The output prefix becomes: <outputDir>/slide-<n>.png
+  const prefix = path.join(outputDir, 'slide');
+  console.log(`  Rasterising PDF with pdftoppm...`);
+  const result = spawnSync('pdftoppm', [
+    '-png',
+    '-scale-to-x', '1280',
+    '-scale-to-y', '-1',
+    pdfPath,
+    prefix,
+  ], { encoding: 'utf8' });
 
-  console.log(`  Uploading PDF to Storage: ${pdfFilename}...`);
-  await uploadToStorage(pdfPath, pdfFilename, bucket);
-
-  // Call cloud function with Storage path
-  const apiKey = await resolveRenderKey();
-  const cloudUrl = process.env.RENDER_HTML_URL ||
-    'https://us-central1-shockproof-dev.cloudfunctions.net/renderHtmlToPng';
-
-  console.log(`  Rendering PDF pages via cloud function...`);
-  const response = await fetch(cloudUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-    },
-    body: JSON.stringify({ pdfStoragePath: pdfFilename, width: 1280, height: 720 }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Cloud PDF render failed (${response.status}): ${errorText}`);
+  if (result.status !== 0) {
+    const msg = result.stderr || result.error?.message || 'unknown error';
+    throw new Error(
+      `pdftoppm failed (exit ${result.status}): ${msg}\n` +
+      'Make sure poppler-utils is installed: brew install poppler'
+    );
   }
 
-  const { pngs, pageCount } = await response.json();
-  console.log(`  PDF has ${pageCount} page(s).`);
+  // Collect pdftoppm output files (slide-1.png … or slide-001.png …) and
+  // rename them to the canonical zero-padded format: slide_001.png, …
+  const rawFiles = fs.readdirSync(outputDir)
+    .filter(f => f.startsWith('slide-') && f.endsWith('.png'))
+    .sort((a, b) => {
+      // Sort numerically by the page number embedded in the filename
+      const n = s => parseInt(s.replace(/^slide-0*/, '').replace('.png', ''), 10);
+      return n(a) - n(b);
+    });
 
-  // Write PNGs to disk
-  const pngPaths = [];
-  for (let i = 0; i < pngs.length; i++) {
+  const pngPaths = rawFiles.map((f, i) => {
+    const src  = path.join(outputDir, f);
     const dest = path.join(outputDir, `slide_${String(i + 1).padStart(3, '0')}.png`);
-    fs.writeFileSync(dest, Buffer.from(pngs[i], 'base64'));
-    pngPaths.push(dest);
-    console.log(`  Rendered page ${i + 1}/${pageCount}`);
-  }
+    fs.renameSync(src, dest);
+    return dest;
+  });
 
   console.log(`  Extracted ${pngPaths.length} slide PNGs`);
   return pngPaths;
