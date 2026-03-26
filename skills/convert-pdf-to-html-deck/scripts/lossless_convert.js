@@ -4,6 +4,11 @@ const path = require('path');
 const { extractPNGs, extractPageText } = require('./extract_pages');
 const { resolveApiKey } = require('./resolve_api_key');
 
+// Narration principles live in the skill root (copy of agents/courseassistant/shared/narration-principles.md)
+const NARRATION_PRINCIPLES = fs.readFileSync(
+  path.join(__dirname, '..', 'narration-principles.md'), 'utf8'
+);
+
 const RENDERER_ROOT = path.join(__dirname, '../../shared/html-slide-renderer');
 
 /**
@@ -30,7 +35,7 @@ async function generateNarration(pages, apiKey) {
 
   const response = await client.messages.create({
     model: 'claude-haiku-4-5',
-    max_tokens: 4096,
+    max_tokens: 8096,
     messages: [{
       role: 'user',
       content: `You are writing spoken narration for a training presentation video.
@@ -44,6 +49,10 @@ Rules:
 - Do NOT start with "In this slide" or "As you can see"
 - Do NOT include stage directions or parenthetical notes
 - Keep each page's narration concise (under 60 words)
+
+You MUST also follow all of the narration principles below:
+
+${NARRATION_PRINCIPLES}
 
 Respond with a JSON array of strings, one narration per page, in the same order as the pages.
 Example: ["Narration for page 1.", "Narration for page 2.", ...]
