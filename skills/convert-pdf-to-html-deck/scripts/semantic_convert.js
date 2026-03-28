@@ -136,7 +136,7 @@ EVERY content component takes (slide, pres, ...) or (slide, ...) as shown:
 Output ONLY the JavaScript code. No markdown fences, no explanation.`;
 
   const response = await client.messages.create({
-    model: opts.model || 'claude-haiku-4-5',
+    model: opts.model || 'claude-sonnet-4-6',
     max_tokens: 8192,
     messages: [{
       role: 'user',
@@ -207,7 +207,7 @@ ${partialScript}
 Output ONLY the continuation JavaScript code. No markdown fences, no explanation.`;
 
       const contResponse = await client.messages.create({
-        model: opts.model || 'claude-haiku-4-5',
+        model: opts.model || 'claude-sonnet-4-6',
         max_tokens: 8192,
         messages: [{
           role: 'user',
@@ -303,7 +303,7 @@ Rules:
 - Output ONLY the fixed JavaScript code, no explanation, no markdown fences`;
 
   const response = await client.messages.create({
-    model: opts.model || 'claude-haiku-4-5',
+    model: opts.model || 'claude-sonnet-4-6',
     max_tokens: 8192,
     messages: [{ role: 'user', content: prompt }],
   });
