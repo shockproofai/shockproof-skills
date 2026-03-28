@@ -130,8 +130,8 @@ EVERY content component takes (slide, pres, ...) or (slide, ...) as shown:
 - Write for a human narrator speaking to an audience
 - Synthesize, don't read bullet points verbatim
 - Do NOT start with "In this slide" or "As you can see"
-- 3–5 sentences per slide, under 80 words
-- For slides with bullet lists, step sequences, or card sets: open with one sentence explaining WHY the content matters, then cover the key concepts shown — synthesizing the actual items on the slide without reading them word-for-word. A listener who cannot see the slide should come away understanding both the purpose and the substance of what is listed.
+- Target at least 30 seconds of narration per content slide (~75+ words); 60–90 seconds for complex slides
+- For slides with bullet lists, step sequences, or card sets: open with a sentence explaining WHY the content matters before mentioning any items. Do not announce how many items there are. After framing, you may address individual items — paraphrase and explain each one, do not read them verbatim.
 
 Output ONLY the JavaScript code. No markdown fences, no explanation.`;
 

@@ -54,8 +54,8 @@ Rules:
 - Do NOT read bullet points verbatim — synthesize and explain
 - Do NOT start with "In this slide" or "As you can see"
 - Do NOT include stage directions or parenthetical notes
-- Keep each page's narration concise (under 60 words)
-- For slides with bullet lists, step sequences, or card sets: ALWAYS open the narration by explaining WHY the content matters or how the learner will use it — before mentioning any items. Do not enumerate items or announce how many there are. Frame first, detail second.
+- Target at least 30 seconds of narration per content slide (~75+ words); 60–90 seconds for complex slides
+- For slides with bullet lists, step sequences, or card sets: open with a sentence explaining WHY the content matters before mentioning any items. Do not announce how many items there are. After framing, you may address individual items — paraphrase and explain each one, do not read them verbatim.
 
 You MUST also follow all of the narration principles below:
 
