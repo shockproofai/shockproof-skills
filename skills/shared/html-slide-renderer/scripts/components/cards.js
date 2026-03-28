@@ -71,10 +71,15 @@ module.exports = function makeCards(ctx) {
   }
 
   // Wrap raw card HTML in a flex item so it participates in row layout
+  // opts.compact: true → smaller title/body fonts, tighter padding and gaps for dense multi-card slides
   function cardHtml(accentColor, titleText, bodyText, opts = {}) {
-    const bodyFontSize  = opts.bodyFontSize  || 12;
-    const titleFontSize = opts.titleFontSize || 16;
+    const compact       = opts.compact       || false;
+    const bodyFontSize  = opts.bodyFontSize  || (compact ? 10  : 12);
+    const titleFontSize = opts.titleFontSize || (compact ? 13  : 16);
     const titleColor    = opts.titleColor    || C.navy;
+    const pad           = compact ? '8px 10px' : '12px 14px';
+    const marginTop     = compact ? 5 : 10;
+    const titleMb       = compact ? 4 : 8;
 
     let bodyContent = '';
     if (bodyText) {
@@ -83,7 +88,7 @@ module.exports = function makeCards(ctx) {
           ? Math.max(8.5, bodyFontSize - (bodyText.length - 4) * 0.4)
           : bodyFontSize;
         const itemGapPx = pt(dynSize) * 0.65;
-        bodyContent = `<div style="display:flex;flex-direction:column;gap:${itemGapPx}px;margin-top:10px;overflow:hidden;">
+        bodyContent = `<div style="display:flex;flex-direction:column;gap:${itemGapPx}px;margin-top:${marginTop}px;overflow:hidden;">
           ${bodyText.map(item => `<div style="display:flex;align-items:flex-start;gap:8px;font-size:${pt(dynSize)}px;color:${C.gray};line-height:1.35;">
             <span style="color:${accentColor};font-weight:bold;flex-shrink:0;">\u2022</span>
             <span>${esc(item)}</span>
@@ -95,7 +100,7 @@ module.exports = function makeCards(ctx) {
     }
 
     const titleHtml = titleText
-      ? `<div style="font-size:${pt(titleFontSize)}px;font-weight:bold;color:${titleColor};line-height:1.25;margin-bottom:8px;flex-shrink:0;">${esc(titleText)}</div>`
+      ? `<div style="font-size:${pt(titleFontSize)}px;font-weight:bold;color:${titleColor};line-height:1.25;margin-bottom:${titleMb}px;flex-shrink:0;">${esc(titleText)}</div>`
       : '';
 
     return `<div style="
@@ -105,7 +110,7 @@ module.exports = function makeCards(ctx) {
       overflow:hidden;
     ">
       <div style="background:${accentColor};border-radius:1px 0 0 1px;"></div>
-      <div style="padding:12px 14px;overflow:hidden;display:flex;flex-direction:column;">
+      <div style="padding:${pad};overflow:hidden;display:flex;flex-direction:column;">
         ${titleHtml}
         ${bodyContent}
       </div>

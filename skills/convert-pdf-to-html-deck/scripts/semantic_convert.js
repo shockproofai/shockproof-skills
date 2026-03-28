@@ -279,7 +279,7 @@ ${brokenScript}
 
 Rules:
 - Fix ONLY the slides listed in the issues. Do not touch other slides.
-- Primary strategy: add { compact: true } as the last argument to addStepRow and/or addCalloutBox on the affected slide.
+- Primary strategy: add { compact: true } as the last argument to addStepRow, addCalloutBox, and/or as the 4th argument to cardHtml on the affected slide.
 - Secondary strategy: reduce rowH for addStyledTable (e.g. 0.35 → 0.22).
 - Tertiary: reduce bullet fontSize via { fontSize: 10 } opts.
 - Do NOT remove content, change narration, or restructure unaffected slides.
@@ -373,6 +373,7 @@ If there are issues, respond with JSON like:
 Layout fix strategies (in order of preference):
 - For slides using addStepRow: pass { compact: true } as the last argument to shrink badge, fonts, and row height
 - For slides using addCalloutBox: pass { compact: true } in the opts object to reduce font size and padding
+- For slides using cardHtml (called inside startRow): pass { compact: true } as the 4th argument — e.g. cardHtml(C.blue, "Title", items, { compact: true }) — to shrink title/body fonts and card padding
 - For slides using addBullets: pass { fontSize: 10 } in opts to shrink bullet text
 - For slides using addStyledTable: reduce rowH (e.g. from 0.35 to 0.22)
 - Remove a calloutBox entirely only as a last resort if compact mode is insufficient
