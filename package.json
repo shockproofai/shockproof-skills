@@ -8,8 +8,7 @@
     "shockproof-skills": "./scripts/install.js"
   },
   "scripts": {
-    "build:plugin": "node scripts/build-plugin.js",
-    "build:pdf-lossless-deck": "node scripts/build-lossless-plugin.js"
+    "build:plugin": "node scripts/build-plugin.js"
   },
   "exports": {
     ".": "./index.js",
