@@ -317,8 +317,45 @@ Rules:
   return fixedPath;
 }
 
+const VISUAL_CHECK_PROMPT = (slideNum, total) => `\
+This is slide ${slideNum} of ${total} (1280×720px). It has a blue header bar at top, \
+a content area in the middle, and a light-grey footer bar at the bottom.
+
+Examine this slide carefully for layout problems:
+
+OVERFLOW (content too big):
+1. Content cut off at the bottom — overflowing into or past the footer bar. Also includes \
+callout boxes where only the title label is visible but the body text is clipped.
+2. Content cut off at the top — includes (a) content pushed above the blue header bar, \
+AND (b) the first content item where only the body/description text is visible but the \
+title, label, or numbered badge is clipped or missing at the very top of the content area.
+3. Slide nearly empty when it clearly should have content (extreme overflow, all off-screen).
+
+UNDERSIZED (too much whitespace):
+4. Content occupies less than ~60% of the available content area with large empty space \
+at the bottom — fonts or row heights were over-constrained and should be increased.
+
+If this slide looks correct, respond with exactly: {"ok":true}
+If there are issues, respond with JSON like:
+{"issues":[{"slide":${slideNum},"problem":"Step 1 badge clipped at top — only description text visible","fix":"Add { compact: true } to all addStepRow calls on this slide and addCalloutBox"}]}
+
+Downsize fix strategies (overflow):
+- addStepRow: pass { compact: true } as the last argument
+- addCalloutBox: pass { compact: true } in opts
+- cardHtml: pass { compact: true } as the 4th argument on ALL cardHtml calls on that slide
+- addBullets: pass { fontSize: 10 } in opts
+- addStyledTable: reduce rowH (e.g. from 0.35 to 0.22)
+
+Upsize fix strategies (undersized):
+- addBullets with explicit fontSize: increase N or remove fontSize constraint
+- addStyledTable with low rowH: increase rowH (e.g. 0.22→0.32)
+- addStepRow with compact: true: remove compact if ample space
+- addCalloutBox with compact: true: remove compact if ample space
+
+Respond with ONLY the JSON object, no explanation.`;
+
 /**
- * Send rendered slide PNGs to Claude for visual overflow detection.
+ * Send rendered slide PNGs to Claude for visual overflow detection — one slide at a time.
  * Returns a fixed script path if issues were found and fixed, or null if all clear.
  */
 async function visualCheckAndFix(outputDir, scriptPath, opts, apiKey) {
@@ -353,82 +390,48 @@ async function visualCheckAndFix(outputDir, scriptPath, opts, apiKey) {
 
   if (pngFiles.length === 0) return null;
 
-  const buildScript = fs.readFileSync(scriptPath, 'utf8');
-
-  const content = [];
-  for (const p of pngFiles) {
-    content.push({
-      type: 'image',
-      source: { type: 'base64', media_type: 'image/png', data: fs.readFileSync(p).toString('base64') },
-    });
+  // Check each slide individually so each gets full model attention.
+  console.log(`  Visually checking ${pngFiles.length} slides for overflow (per-slide)...`);
+  const allIssues = [];
+  for (let i = 0; i < pngFiles.length; i++) {
+    const slideNum = i + 1;
+    process.stdout.write(`\r  Checking slide ${slideNum}/${pngFiles.length}...   `);
+    const content = [
+      {
+        type: 'image',
+        source: { type: 'base64', media_type: 'image/png', data: fs.readFileSync(pngFiles[i]).toString('base64') },
+      },
+      { type: 'text', text: VISUAL_CHECK_PROMPT(slideNum, pngFiles.length) },
+    ];
+    try {
+      const response = await client.messages.create({
+        model: opts.model || 'claude-sonnet-4-6',
+        max_tokens: 512,
+        messages: [{ role: 'user', content }],
+      });
+      const raw = response.content[0].text.trim();
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const result = JSON.parse(jsonMatch[0]);
+        if (result.issues && result.issues.length > 0) allIssues.push(...result.issues);
+      }
+    } catch (err) {
+      console.warn(`\n  Could not check slide ${slideNum}: ${err.message}`);
+    }
   }
-  content.push({
-    type: 'text',
-    text: `Above are ${pngFiles.length} rendered slide PNGs (1280×720px each). Each slide has a blue header bar at top, content area in the middle, and a light-grey footer bar at the bottom.
+  console.log('');
 
-Check each slide for TWO types of layout problems:
-
-OVERFLOW (content too big):
-1. Content overflowing into or past the footer (content cut off at bottom) — including callout boxes where only the title label is visible but the body text is clipped
-2. Content cut off at the top — this includes: (a) content pushed above the blue header bar, AND (b) the first content item on a slide where only the body/description text is visible but the title, label, or numbered badge is clipped or missing at the very top of the content area
-3. A slide that is nearly empty when it clearly should have content (suggests extreme overflow where all content is off-screen)
-
-UNDERSIZED (content too small / too much whitespace):
-4. Content occupies less than ~60% of the available content area with large empty space at the bottom — this means font sizes or row heights were over-constrained and should be increased
-
-The build script that generated these slides:
-\`\`\`js
-${buildScript}
-\`\`\`
-
-If all slides look correct, respond with exactly: {"ok":true}
-If there are issues, respond with JSON like:
-{"issues":[{"slide":4,"problem":"Table rows cut off at bottom — only 2 of 7 rows visible","fix":"Add { compact: true } as the 6th argument to each addStepRow call on this slide, and add { compact: true } opts to addCalloutBox"},{"slide":3,"problem":"Bullets occupy only top 40% of content area — font size too small","fix":"Remove { fontSize: 9 } from addBullets call to restore default font size"}]}
-
-Downsize fix strategies (overflow):
-- For slides using addStepRow: pass { compact: true } as the last argument to shrink badge, fonts, and row height
-- For slides using addCalloutBox: pass { compact: true } in the opts object to reduce font size and padding
-- For slides using cardHtml (called inside startRow): pass { compact: true } as the 4th argument on ALL cardHtml calls on that slide (not just the clipping card) — e.g. cardHtml(C.blue, "Title", items, { compact: true }) — to shrink title/body fonts and card padding consistently
-- For slides using addBullets: pass { fontSize: 10 } in opts to shrink bullet text
-- For slides using addStyledTable: reduce rowH (e.g. from 0.35 to 0.22)
-- Remove a calloutBox entirely only as a last resort if compact mode is insufficient
-
-Upsize fix strategies (undersized/whitespace):
-- For slides using addBullets with an explicit { fontSize: N }: increase N (e.g. 9→12, 10→13) or remove the fontSize constraint entirely to restore default
-- For slides using addStyledTable with a low rowH: increase rowH (e.g. 0.22→0.32, 0.26→0.32)
-- For slides using addStepRow with { compact: true }: remove compact if there is ample space
-- For slides using addCalloutBox with { compact: true }: remove compact if there is ample space
-
-Respond with ONLY the JSON object, no explanation.`,
-  });
-
-  console.log(`  Visually checking ${pngFiles.length} slides for overflow...`);
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content }],
-  });
-
-  const raw = response.content[0].text.trim();
-  let result;
-  try {
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    result = jsonMatch ? JSON.parse(jsonMatch[0]) : { ok: true };
-  } catch {
-    console.warn('  Could not parse visual check response — skipping auto-fix');
-    return null;
-  }
-
-  if (result.ok || !result.issues || result.issues.length === 0) {
+  if (allIssues.length === 0) {
     console.log('  ✓ Visual check passed — no overflow detected');
     return null;
   }
 
-  console.log(`  ⚠ Visual check found ${result.issues.length} issue(s):`);
-  result.issues.forEach(i => console.log(`    Slide ${i.slide}: ${i.problem}`));
+  console.log(`  ⚠ Visual check found ${allIssues.length} issue(s):`);
+  allIssues.forEach(i => console.log(`    Slide ${i.slide}: ${i.problem}`));
   console.log('  Asking Claude to fix layout...\n');
 
-  const errorDesc = result.issues
+  const buildScript = fs.readFileSync(scriptPath, 'utf8');
+  const errorDesc = allIssues
     .map(i => `Slide ${i.slide}: ${i.problem}. Suggested fix: ${i.fix}`)
     .join('\n');
 
