@@ -369,8 +369,8 @@ async function visualCheckAndFix(outputDir, scriptPath, opts, apiKey) {
 Check each slide for TWO types of layout problems:
 
 OVERFLOW (content too big):
-1. Content overflowing into or past the footer (content cut off at bottom)
-2. Content cut off at the top (pushed above the header)
+1. Content overflowing into or past the footer (content cut off at bottom) — including callout boxes where only the title label is visible but the body text is clipped
+2. Content cut off at the top — this includes: (a) content pushed above the blue header bar, AND (b) the first content item on a slide where only the body/description text is visible but the title, label, or numbered badge is clipped or missing at the very top of the content area
 3. A slide that is nearly empty when it clearly should have content (suggests extreme overflow where all content is off-screen)
 
 UNDERSIZED (content too small / too much whitespace):
