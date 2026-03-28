@@ -20,14 +20,14 @@ module.exports = function makeCards(ctx) {
           ? Math.max(8.5, bodyFontSize - (bodyText.length - 4) * 0.4)
           : bodyFontSize;
         const itemGapPx = pt(dynSize) * 0.65;
-        bodyHtml = `<div style="display:flex;flex-direction:column;gap:${itemGapPx}px;margin-top:10px;overflow:hidden;padding-bottom:4px;">
+        bodyHtml = `<div style="display:flex;flex-direction:column;gap:${itemGapPx}px;margin-top:10px;padding-bottom:4px;">
           ${bodyText.map(item => `<div style="display:flex;align-items:flex-start;gap:8px;font-size:${pt(dynSize)}px;color:${C.gray};line-height:1.35;">
             <span style="color:${accentColor};font-weight:bold;flex-shrink:0;">\u2022</span>
             <span>${esc(item)}</span>
           </div>`).join('\n')}
         </div>`;
       } else {
-        bodyHtml = `<div style="font-size:${pt(bodyFontSize)}px;color:${C.gray};line-height:1.4;overflow:hidden;">${esc(bodyText)}</div>`;
+        bodyHtml = `<div style="font-size:${pt(bodyFontSize)}px;color:${C.gray};line-height:1.4;">${esc(bodyText)}</div>`;
       }
     }
 
@@ -42,7 +42,7 @@ module.exports = function makeCards(ctx) {
       overflow:hidden;
     ">
       <div style="background:${accentColor};border-radius:1px 0 0 1px;"></div>
-      <div style="padding:12px 14px;overflow:hidden;display:flex;flex-direction:column;">
+      <div style="padding:12px 14px;display:flex;flex-direction:column;">
         ${titleHtml}
         ${bodyHtml}
       </div>
@@ -88,14 +88,14 @@ module.exports = function makeCards(ctx) {
           ? Math.max(8.5, bodyFontSize - (bodyText.length - 4) * 0.4)
           : bodyFontSize;
         const itemGapPx = pt(dynSize) * 0.65;
-        bodyContent = `<div style="display:flex;flex-direction:column;gap:${itemGapPx}px;margin-top:${marginTop}px;overflow:hidden;padding-bottom:4px;">
+        bodyContent = `<div style="display:flex;flex-direction:column;gap:${itemGapPx}px;margin-top:${marginTop}px;padding-bottom:4px;">
           ${bodyText.map(item => `<div style="display:flex;align-items:flex-start;gap:8px;font-size:${pt(dynSize)}px;color:${C.gray};line-height:1.35;">
             <span style="color:${accentColor};font-weight:bold;flex-shrink:0;">\u2022</span>
             <span>${esc(item)}</span>
           </div>`).join('\n')}
         </div>`;
       } else {
-        bodyContent = `<div style="font-size:${pt(bodyFontSize)}px;color:${C.gray};line-height:1.4;overflow:hidden;">${esc(bodyText)}</div>`;
+        bodyContent = `<div style="font-size:${pt(bodyFontSize)}px;color:${C.gray};line-height:1.4;">${esc(bodyText)}</div>`;
       }
     }
 
@@ -110,7 +110,7 @@ module.exports = function makeCards(ctx) {
       overflow:hidden;
     ">
       <div style="background:${accentColor};border-radius:1px 0 0 1px;"></div>
-      <div style="padding:${pad};overflow:hidden;display:flex;flex-direction:column;">
+      <div style="padding:${pad};display:flex;flex-direction:column;">
         ${titleHtml}
         ${bodyContent}
       </div>
