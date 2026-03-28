@@ -6,16 +6,22 @@ module.exports = function makeContent(ctx) {
   // ═══════════════════════════════════════════════════════════════════════════
   // CALLOUT BOX — blue accent bar, gold title
   // ═══════════════════════════════════════════════════════════════════════════
+  // opts.compact: true → smaller fonts and tighter padding for dense slides
   function addCalloutBox(slide, pres, titleText, bodyText, opts = {}) {
     const height = opts.height || 'auto';
     const heightStyle = height === 'auto' ? '' : `height:${typeof height === 'number' ? height + 'px' : height};`;
+    const compact   = opts.compact || false;
+    const titlePt   = compact ? 11  : 14;
+    const bodyPt    = compact ? 10  : 12;
+    const pad       = compact ? '8px 12px' : '12px 16px';
+    const titleMb   = compact ? 4   : 8;
 
     const titleHtml = titleText
-      ? `<div style="font-size:${pt(14)}px;font-weight:bold;color:${C.gold};line-height:1.25;margin-bottom:8px;flex-shrink:0;">${esc(titleText)}</div>`
+      ? `<div style="font-size:${pt(titlePt)}px;font-weight:bold;color:${C.gold};line-height:1.25;margin-bottom:${titleMb}px;flex-shrink:0;">${esc(titleText)}</div>`
       : '';
 
     const bodyHtml = bodyText
-      ? `<div style="font-size:${pt(12)}px;color:${C.gray};line-height:1.4;overflow:hidden;">${esc(bodyText)}</div>`
+      ? `<div style="font-size:${pt(bodyPt)}px;color:${C.gray};line-height:1.4;overflow:hidden;">${esc(bodyText)}</div>`
       : '';
 
     slide.add(`<div style="
@@ -25,7 +31,7 @@ module.exports = function makeContent(ctx) {
       overflow:hidden; flex-shrink:0;
     ">
       <div style="background:${C.blue};border-radius:1px 0 0 1px;"></div>
-      <div style="padding:12px 16px;overflow:hidden;display:flex;flex-direction:column;">
+      <div style="padding:${pad};overflow:hidden;display:flex;flex-direction:column;">
         ${titleHtml}
         ${bodyHtml}
       </div>

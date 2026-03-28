@@ -6,24 +6,31 @@ module.exports = function makeStructured(ctx) {
   // ═══════════════════════════════════════════════════════════════════════════
   // STEP ROW — numbered step card (auto-stacks in flow)
   // ═══════════════════════════════════════════════════════════════════════════
-  function addStepRow(slide, pres, num, title, description) {
-    const badgeS = px(0.42);
+  // opts.compact: true → smaller badge, font, and min-height for dense slides
+  function addStepRow(slide, pres, num, title, description, opts = {}) {
+    const compact  = opts.compact || false;
+    const badgeS   = px(compact ? 0.33 : 0.42);
+    const minH     = px(compact ? 0.52 : 0.72);
+    const numPt    = compact ? 13  : 16;
+    const titlePt  = compact ? 10  : 13;
+    const descPt   = compact ? 8.5 : 10;
+    const padV     = compact ? 5   : 8;
 
     slide.add(`<div style="
       display:grid; grid-template-columns:${px(0.07)}px 8px ${badgeS}px 8px 1fr;
       align-items:center;
       background:${C.white}; border-radius:5px;
-      overflow:hidden; flex-shrink:0; min-height:${px(0.72)}px;
+      overflow:hidden; flex-shrink:0; min-height:${minH}px;
     ">
       <div style="background:${C.blue};height:100%;border-radius:3px 0 0 3px;"></div>
       <div></div>
       <div style="width:${badgeS}px;height:${badgeS}px;background:${C.blue};border-radius:4px;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:${pt(16)}px;font-weight:bold;color:${C.white};">${num}</span>
+        <span style="font-size:${pt(numPt)}px;font-weight:bold;color:${C.white};">${num}</span>
       </div>
       <div></div>
-      <div style="padding:8px 12px 8px 0;overflow:hidden;">
-        <div style="font-size:${pt(13)}px;font-weight:bold;color:${C.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(title)}</div>
-        <div style="font-size:${pt(10)}px;color:${C.gray};line-height:1.38;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(description)}</div>
+      <div style="padding:${padV}px 12px ${padV}px 0;overflow:hidden;">
+        <div style="font-size:${pt(titlePt)}px;font-weight:bold;color:${C.navy};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(title)}</div>
+        <div style="font-size:${pt(descPt)}px;color:${C.gray};line-height:1.38;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(description)}</div>
       </div>
     </div>`);
   }

@@ -249,7 +249,7 @@ Output ONLY the continuation JavaScript code. No markdown fences, no explanation
  * Ask Claude to fix a failing build script.
  * Returns the path to the fixed script (written as build_script_fixed.js).
  */
-async function fixBuildScript(scriptPath, errorMessage, opts = {}) {
+async function fixBuildScript(scriptPath, errorMessage, opts = {}, isLayoutFix = false) {
   let Anthropic;
   try {
     Anthropic = require('@anthropic-ai/sdk');
@@ -266,12 +266,26 @@ async function fixBuildScript(scriptPath, errorMessage, opts = {}) {
 
   const brokenScript = fs.readFileSync(scriptPath, 'utf8');
 
-  const response = await client.messages.create({
-    model: opts.model || 'claude-haiku-4-5',
-    max_tokens: 8192,
-    messages: [{
-      role: 'user',
-      content: `Fix this Node.js script. It failed with the error below.
+  const prompt = isLayoutFix
+    ? `Fix layout overflow in this slide build script. The visual issues are listed below.
+
+LAYOUT ISSUES:
+${errorMessage}
+
+CURRENT SCRIPT:
+\`\`\`js
+${brokenScript}
+\`\`\`
+
+Rules:
+- Fix ONLY the slides listed in the issues. Do not touch other slides.
+- Primary strategy: add { compact: true } as the last argument to addStepRow and/or addCalloutBox on the affected slide.
+- Secondary strategy: reduce rowH for addStyledTable (e.g. 0.35 → 0.22).
+- Tertiary: reduce bullet fontSize via { fontSize: 10 } opts.
+- Do NOT remove content, change narration, or restructure unaffected slides.
+- Do NOT change the require path.
+- Output ONLY the fixed JavaScript code, no explanation, no markdown fences.`
+    : `Fix this Node.js script. It failed with the error below.
 
 ERROR:
 ${errorMessage}
@@ -285,8 +299,12 @@ Rules:
 - Fix ONLY the code that caused the error
 - Do NOT change the overall structure or content
 - Do NOT change the require path
-- Output ONLY the fixed JavaScript code, no explanation, no markdown fences`,
-    }],
+- Output ONLY the fixed JavaScript code, no explanation, no markdown fences`;
+
+  const response = await client.messages.create({
+    model: opts.model || 'claude-haiku-4-5',
+    max_tokens: 8192,
+    messages: [{ role: 'user', content: prompt }],
   });
 
   let fixed = response.content[0].text.trim();
@@ -350,7 +368,14 @@ ${buildScript}
 
 If all slides look correct, respond with exactly: {"ok":true}
 If there are issues, respond with JSON like:
-{"issues":[{"slide":4,"problem":"Table rows cut off at bottom — only 2 of 7 rows visible","fix":"Reduce rowH from 0.35 to 0.25 and remove addCalloutBox to make room"}]}
+{"issues":[{"slide":4,"problem":"Table rows cut off at bottom — only 2 of 7 rows visible","fix":"Add { compact: true } as the 6th argument to each addStepRow call on this slide, and add { compact: true } opts to addCalloutBox"}]}
+
+Layout fix strategies (in order of preference):
+- For slides using addStepRow: pass { compact: true } as the last argument to shrink badge, fonts, and row height
+- For slides using addCalloutBox: pass { compact: true } in the opts object to reduce font size and padding
+- For slides using addBullets: pass { fontSize: 10 } in opts to shrink bullet text
+- For slides using addStyledTable: reduce rowH (e.g. from 0.35 to 0.22)
+- Remove a calloutBox entirely only as a last resort if compact mode is insufficient
 
 Respond with ONLY the JSON object, no explanation.`,
   });
@@ -385,7 +410,7 @@ Respond with ONLY the JSON object, no explanation.`,
     .map(i => `Slide ${i.slide}: ${i.problem}. Suggested fix: ${i.fix}`)
     .join('\n');
 
-  return fixBuildScript(scriptPath, errorDesc, opts);
+  return fixBuildScript(scriptPath, errorDesc, opts, /* isLayoutFix */ true);
 }
 
 /**
