@@ -87,11 +87,9 @@ module.exports = function makeStructured(ctx) {
 
       return `<div style="display:grid;grid-template-columns:repeat(${numCols}, 1fr);min-height:${rowH}px;">
         ${row.map((cell, ci) => {
-          const align = (ri > 0 && ci > 0) ? 'center' : 'left';
           return `<div style="
             background:${rowBg};border:0.5px solid ${C.border};
-            display:flex;align-items:center;
-            ${align === 'center' ? 'justify-content:center;' : 'padding-left:6px;'}
+            display:flex;align-items:center;justify-content:center;text-align:center;
             font-size:${pt(fontSize)}px;font-weight:${fontW};color:${textFill};
             padding:4px 6px;
           ">${esc(String(cell))}</div>`;
@@ -127,11 +125,9 @@ module.exports = function makeStructured(ctx) {
       // title is tall (e.g. wraps to two lines) without overflowing.
       return `<div style="display:grid;grid-template-columns:repeat(${numCols}, 1fr);flex:1;min-height:0;">
         ${row.map((cell, ci) => {
-          const align = (ri > 0 && ci > 0) ? 'center' : 'left';
           return `<div style="
             background:${rowBg};border:0.5px solid ${C.border};
-            display:flex;align-items:center;
-            ${align === 'center' ? 'justify-content:center;' : 'padding-left:6px;'}
+            display:flex;align-items:center;justify-content:center;text-align:center;
             font-size:${pt(fontSize)}px;font-weight:${fontW};color:${textFill};
             padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           ">${esc(String(cell))}</div>`;
