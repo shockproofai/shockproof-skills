@@ -31,7 +31,7 @@ async function generateBuildScript(pdfPath, outputDir, opts = {}) {
 
   const pdfBase64 = fs.readFileSync(pdfPath).toString('base64');
 
-  const seriesTitle  = opts.seriesTitle  || 'Converted Presentation';
+  const seriesTitle  = opts.seriesTitle  || null;
   const totalModules = opts.totalModules || 1;
   const moduleNum    = opts.moduleNum    || 1;
   const videoFilename = opts.videoFilename || (path.basename(pdfPath, '.pdf') + '.mp4');
@@ -56,9 +56,9 @@ ${API_REFERENCE}
 ## Your task
 Write a COMPLETE, executable Node.js build script that:
 1. Requires sai_html_template.js using the EXACT path shown above (not a directory path)
-2. Uses seriesTitle: "${seriesTitle}", totalModules: ${totalModules}
+2. Uses totalModules: ${totalModules}${seriesTitle ? `, seriesTitle: "${seriesTitle}"` : ' and infers seriesTitle from the PDF (the overall series/course name, e.g. "CRE Borrower Interview" — NOT the individual module title)'}
 3. Sets MODULE_NUM = ${moduleNum}
-4. Infers MODULE_TITLE, TOTAL_PAGES from the PDF content
+4. Infers MODULE_TITLE (the individual module title) and TOTAL_PAGES from the PDF content
 5. Recreates EVERY slide in the correct order using the most appropriate component(s)
 6. Calls .narrate() on EVERY slide — 2–4 sentences of natural spoken narration
    based on the COMPONENT CONTENT you are placing on the slide (not raw PDF text)
@@ -503,7 +503,7 @@ async function semanticConvert(pdfPath, outputDir, opts = {}) {
   if (!opts.noVideo) {
     console.log('\n── Submitting to Narakeet ──────────────────────────────────\n');
     const tpl = require(path.join(RENDERER_ROOT, 'scripts/sai_html_template.js'))({
-      seriesTitle: opts.seriesTitle || 'Converted', totalModules: opts.totalModules || 1,
+      seriesTitle: opts.seriesTitle || path.basename(pdfPath, '.pdf'), totalModules: opts.totalModules || 1,
     });
     const pres = tpl.createPresentation();
     const videoFilename = opts.videoFilename || (path.basename(pdfPath, '.pdf') + '.mp4');
