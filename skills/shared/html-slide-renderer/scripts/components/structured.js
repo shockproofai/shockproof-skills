@@ -92,7 +92,7 @@ module.exports = function makeStructured(ctx) {
             display:flex;align-items:center;justify-content:center;text-align:center;
             font-size:${pt(fontSize)}px;font-weight:${fontW};color:${textFill};
             padding:4px 6px;
-          ">${esc(String(cell))}</div>`;
+          ">${esc(String(cell)).replace(/ \(([^)]*)\)/g, (_, inner) => `\u00a0(${inner.replace(/ /g, '\u00a0')})`  )}</div>`;
         }).join('')}
       </div>`;
     }).join('\n');
