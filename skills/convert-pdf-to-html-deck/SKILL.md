@@ -81,8 +81,8 @@ Lossless mode runs `pdftoppm` locally to rasterise each PDF page to a 1280px-wid
 
 | Mode | Model | Reason |
 |------|-------|--------|
-| Lossless narration | `claude-sonnet-4-6` | Plain text input — any model works; Sonnet gives better narration quality |
-| Semantic | `claude-haiku-4-5` | Must send PDF document blocks (base64 `application/pdf`); Sonnet returns 400 errors for PDF document inputs |
+| Lossless narration | `claude-sonnet-4-6` | Plain text input |
+| Semantic | `claude-sonnet-4-6` | All steps: build script generation, auto-fix, layout fix, visual overflow check |
 
 ## Shared renderer
 
@@ -102,7 +102,7 @@ Do NOT duplicate renderer code here. All slide rendering and Narakeet submission
 
 Resolved via (in order): env var → `CLAUDE_CODE_OAUTH_TOKEN` (Claude Code sessions) → gcloud CLI → Google Secret Manager.
 
-Note: `ANTHROPIC_API_KEY` is only required when a model other than the built-in Claude Code token is needed. In Claude Code sessions, `CLAUDE_CODE_OAUTH_TOKEN` is used automatically and only `claude-haiku-4-5` is guaranteed to be available. Set `ANTHROPIC_API_KEY` directly for access to Opus or Sonnet models.
+Note: `ANTHROPIC_API_KEY` must be set — all steps use `claude-sonnet-4-6`. The `CLAUDE_CODE_OAUTH_TOKEN` fallback only guarantees access to Haiku and will cause 400 errors for Sonnet calls.
 
 ## Output files
 
