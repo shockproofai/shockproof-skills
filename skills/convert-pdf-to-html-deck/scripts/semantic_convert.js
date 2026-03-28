@@ -133,7 +133,11 @@ If a slide's bullet list has MORE THAN 5 items AND every item follows the patter
 "{shortLabel}: {longDescription}", use addStyledTable instead of addBullets.
 - Row 0 is the header row — choose column names that match the data (e.g. ["Research Area", "What to Do"], ["Document Type", "Description"], ["Step", "Action"])
 - Each subsequent row is [shortLabel, longDescription] — do NOT include the colon
-- ALWAYS set colWidths to reflect actual content: for a short-label + long-description 2-column table use { colWidths: [1, 3] } (25% / 75%); for a 3-column table where columns are roughly equal use the default (omit colWidths)
+- ALWAYS set colWidths to reflect actual content length per column — estimate the typical character width of each column's content and use proportional fr values. Examples:
+  - Short label + long description (2-col): { colWidths: [1, 3] }
+  - Short label + medium text + long text (3-col): { colWidths: [1, 2, 3] }
+  - Short label + medium + medium (3-col): { colWidths: [1, 2, 2] }
+  - Roughly equal columns: omit colWidths
 - Size rows to fill the slide: use { rowH: 0.38 } for 6 rows, { rowH: 0.32 } for 7–8 rows, { rowH: 0.28 } for 9+ rows
 - Do NOT add a calloutBox after a converted table unless one was explicitly present in the original slide
 
@@ -366,7 +370,9 @@ Downsize fix strategies (overflow):
 - addStyledTable: reduce rowH (e.g. from 0.35 to 0.22)
 
 Column width fix (uneven whitespace / wrapping in tables):
-- If a 2-column table has a short first column and long second column (or vice versa), add colWidths to the opts to set proportional widths, e.g. { colWidths: [1, 3] } for 25%/75% or { colWidths: [1, 2] } for 33%/67%
+- If any column has noticeably more whitespace or more wrapping than others, add colWidths to the opts using fr values proportional to typical content length per column
+- 2-col examples: { colWidths: [1, 3] } (25/75), { colWidths: [1, 2] } (33/67)
+- 3-col examples: { colWidths: [1, 2, 3] }, { colWidths: [1, 2, 2] }, { colWidths: [1, 1.5, 2.5] }
 
 Upsize fix strategies (undersized):
 - addBullets with explicit fontSize: increase N or remove fontSize constraint
