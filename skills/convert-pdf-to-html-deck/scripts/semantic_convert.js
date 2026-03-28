@@ -116,7 +116,7 @@ EVERY content component takes (slide, pres, ...) or (slide, ...) as shown:
 - Closing/thank you page → addClosingSlide
 - Numbered step sequence → addStepRow (one call per step)
 - Side-by-side comparison → addComparison
-- Bullet list → addBullets
+- Bullet list → addBullets (see sizing and table-conversion rules below)
 - Checklist items → addChecklist
 - 2–4 cards side by side → startRow() + cardHtml()
 - 2 tables side by side → startRow() + tableHtml()
@@ -125,6 +125,24 @@ EVERY content component takes (slide, pres, ...) or (slide, ...) as shown:
 - Key takeaways (numbered, max 4) → addKeyTakeaways
 - Warning pairs → addRedFlagPairs
 - Stat/metric highlights → startRow() + cardHtml() with big number as title
+
+## Bullet list rules
+
+### Convert to table when items follow "{short}: {long}" pattern and count > 5
+If a slide's bullet list has MORE THAN 5 items AND every item follows the pattern
+"{shortLabel}: {longDescription}", use addStyledTable instead of addBullets.
+- Row 0 is the header row — choose column names that match the data (e.g. ["Research Area", "What to Do"], ["Document Type", "Description"], ["Step", "Action"])
+- Each subsequent row is [shortLabel, longDescription] — do NOT include the colon
+- Size the table to fill available space: use { rowH: 0.32 } for 6–8 rows, { rowH: 0.28 } for 9+ rows
+- Do NOT add a calloutBox after a converted table unless one was explicitly present in the original slide
+
+### Keep as addBullets when count ≤ 5
+When 5 or fewer items, use addBullets. To minimise whitespace, set fontSize
+proportional to item count and text length:
+- 3 items or fewer: { fontSize: 18 }
+- 4 items: { fontSize: 16 }
+- 5 items: { fontSize: 14 }
+If individual items are long (>80 chars), reduce by 1–2pt from the above values.
 
 ## Narration rules
 - Write for a human narrator speaking to an audience
