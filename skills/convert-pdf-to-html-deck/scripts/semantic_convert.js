@@ -366,10 +366,15 @@ async function visualCheckAndFix(outputDir, scriptPath, opts, apiKey) {
     type: 'text',
     text: `Above are ${pngFiles.length} rendered slide PNGs (1280×720px each). Each slide has a blue header bar at top, content area in the middle, and a light-grey footer bar at the bottom.
 
-Check each slide for layout problems:
+Check each slide for TWO types of layout problems:
+
+OVERFLOW (content too big):
 1. Content overflowing into or past the footer (content cut off at bottom)
 2. Content cut off at the top (pushed above the header)
 3. A slide that is nearly empty when it clearly should have content (suggests extreme overflow where all content is off-screen)
+
+UNDERSIZED (content too small / too much whitespace):
+4. Content occupies less than ~60% of the available content area with large empty space at the bottom — this means font sizes or row heights were over-constrained and should be increased
 
 The build script that generated these slides:
 \`\`\`js
@@ -378,15 +383,21 @@ ${buildScript}
 
 If all slides look correct, respond with exactly: {"ok":true}
 If there are issues, respond with JSON like:
-{"issues":[{"slide":4,"problem":"Table rows cut off at bottom — only 2 of 7 rows visible","fix":"Add { compact: true } as the 6th argument to each addStepRow call on this slide, and add { compact: true } opts to addCalloutBox"}]}
+{"issues":[{"slide":4,"problem":"Table rows cut off at bottom — only 2 of 7 rows visible","fix":"Add { compact: true } as the 6th argument to each addStepRow call on this slide, and add { compact: true } opts to addCalloutBox"},{"slide":3,"problem":"Bullets occupy only top 40% of content area — font size too small","fix":"Remove { fontSize: 9 } from addBullets call to restore default font size"}]}
 
-Layout fix strategies (in order of preference):
+Downsize fix strategies (overflow):
 - For slides using addStepRow: pass { compact: true } as the last argument to shrink badge, fonts, and row height
 - For slides using addCalloutBox: pass { compact: true } in the opts object to reduce font size and padding
 - For slides using cardHtml (called inside startRow): pass { compact: true } as the 4th argument on ALL cardHtml calls on that slide (not just the clipping card) — e.g. cardHtml(C.blue, "Title", items, { compact: true }) — to shrink title/body fonts and card padding consistently
 - For slides using addBullets: pass { fontSize: 10 } in opts to shrink bullet text
 - For slides using addStyledTable: reduce rowH (e.g. from 0.35 to 0.22)
 - Remove a calloutBox entirely only as a last resort if compact mode is insufficient
+
+Upsize fix strategies (undersized/whitespace):
+- For slides using addBullets with an explicit { fontSize: N }: increase N (e.g. 9→12, 10→13) or remove the fontSize constraint entirely to restore default
+- For slides using addStyledTable with a low rowH: increase rowH (e.g. 0.22→0.32, 0.26→0.32)
+- For slides using addStepRow with { compact: true }: remove compact if there is ample space
+- For slides using addCalloutBox with { compact: true }: remove compact if there is ample space
 
 Respond with ONLY the JSON object, no explanation.`,
   });
