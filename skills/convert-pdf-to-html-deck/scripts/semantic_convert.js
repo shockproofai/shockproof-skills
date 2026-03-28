@@ -257,7 +257,7 @@ async function fixBuildScript(scriptPath, errorMessage, opts = {}, isLayoutFix =
   } catch {
     Anthropic = require(path.join(path.dirname(scriptPath), '../../..', 'node_modules', '@anthropic-ai/sdk'));
   }
-  const apiKey = process.env.CLAUDE_CODE_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_CODE_OAUTH_TOKEN;
   if (!apiKey) throw new Error('No API key available for fix attempt');
 
   const client = new Anthropic.default({
