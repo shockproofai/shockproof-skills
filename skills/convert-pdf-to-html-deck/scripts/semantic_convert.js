@@ -330,15 +330,24 @@ async function visualCheckAndFix(outputDir, scriptPath, opts, apiKey) {
     baseURL: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
   });
 
+  // Build PNG list without relying on readdir (fails on macOS-restricted dirs like Desktop).
+  // Primary: readdir. Fallback: probe slide_001.png, slide_002.png, … with existsSync.
   let pngFiles;
   try {
     pngFiles = fs.readdirSync(outputDir)
       .filter(f => /^slide_\d+\.png$/.test(f))
       .sort()
       .map(f => path.join(outputDir, f));
-  } catch (e) {
-    console.warn(`  Skipping visual check (cannot read output dir: ${e.message})`);
-    return null;
+  } catch {
+    pngFiles = [];
+    for (let i = 1; i <= 200; i++) {
+      const p = path.join(outputDir, `slide_${String(i).padStart(3, '0')}.png`);
+      if (!fs.existsSync(p)) break;
+      pngFiles.push(p);
+    }
+    if (pngFiles.length > 0) {
+      console.log(`  (Used existsSync probe for slide list — readdir not permitted on this directory)`);
+    }
   }
 
   if (pngFiles.length === 0) return null;
