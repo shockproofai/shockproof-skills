@@ -133,7 +133,8 @@ If a slide's bullet list has MORE THAN 5 items AND every item follows the patter
 "{shortLabel}: {longDescription}", use addStyledTable instead of addBullets.
 - Row 0 is the header row — choose column names that match the data (e.g. ["Research Area", "What to Do"], ["Document Type", "Description"], ["Step", "Action"])
 - Each subsequent row is [shortLabel, longDescription] — do NOT include the colon
-- Size the table to fill available space: use { rowH: 0.32 } for 6–8 rows, { rowH: 0.28 } for 9+ rows
+- ALWAYS set colWidths to reflect actual content: for a short-label + long-description 2-column table use { colWidths: [1, 3] } (25% / 75%); for a 3-column table where columns are roughly equal use the default (omit colWidths)
+- Size rows to fill the slide: use { rowH: 0.38 } for 6 rows, { rowH: 0.32 } for 7–8 rows, { rowH: 0.28 } for 9+ rows
 - Do NOT add a calloutBox after a converted table unless one was explicitly present in the original slide
 
 ### Keep as addBullets when count ≤ 5
@@ -363,6 +364,9 @@ Downsize fix strategies (overflow):
 - cardHtml: pass { compact: true } as the 4th argument on ALL cardHtml calls on that slide
 - addBullets: pass { fontSize: 10 } in opts
 - addStyledTable: reduce rowH (e.g. from 0.35 to 0.22)
+
+Column width fix (uneven whitespace / wrapping in tables):
+- If a 2-column table has a short first column and long second column (or vice versa), add colWidths to the opts to set proportional widths, e.g. { colWidths: [1, 3] } for 25%/75% or { colWidths: [1, 2] } for 33%/67%
 
 Upsize fix strategies (undersized):
 - addBullets with explicit fontSize: increase N or remove fontSize constraint

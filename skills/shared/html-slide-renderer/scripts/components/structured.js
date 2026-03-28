@@ -77,6 +77,9 @@ module.exports = function makeStructured(ctx) {
     const fontSize = opts.fontSize || 11;
     const rowH = opts.rowH ? px(opts.rowH) : px(0.35);
     const numCols = rows[0].length;
+    const gridCols = opts.colWidths
+      ? opts.colWidths.map(w => typeof w === 'number' ? `${w}fr` : w).join(' ')
+      : `repeat(${numCols}, 1fr)`;
 
     const rowsHtml = rows.map((row, ri) => {
       const isHeader = ri === 0;
@@ -85,7 +88,7 @@ module.exports = function makeStructured(ctx) {
       const textFill = isHeader ? C.white : C.navy;
       const fontW = isHeader ? 'bold' : 'normal';
 
-      return `<div style="display:grid;grid-template-columns:repeat(${numCols}, 1fr);min-height:${rowH}px;">
+      return `<div style="display:grid;grid-template-columns:${gridCols};min-height:${rowH}px;">
         ${row.map((cell, ci) => {
           return `<div style="
             background:${rowBg};border:0.5px solid ${C.border};
@@ -112,6 +115,9 @@ module.exports = function makeStructured(ctx) {
       ? Math.max(8.5, baseFontSize - (dataRows - 5) * 0.5)
       : baseFontSize;
     const numCols = rows[0].length;
+    const gridCols = opts.colWidths
+      ? opts.colWidths.map(w => typeof w === 'number' ? `${w}fr` : w).join(' ')
+      : `repeat(${numCols}, 1fr)`;
 
     const rowsHtml = rows.map((row, ri) => {
       const isHeader = ri === 0;
@@ -123,7 +129,7 @@ module.exports = function makeStructured(ctx) {
       // flex:1 + min-height:0 on each row lets the flexbox chain distribute
       // available height equally — rows compress automatically when the slide
       // title is tall (e.g. wraps to two lines) without overflowing.
-      return `<div style="display:grid;grid-template-columns:repeat(${numCols}, 1fr);flex:1;min-height:0;">
+      return `<div style="display:grid;grid-template-columns:${gridCols};flex:1;min-height:0;">
         ${row.map((cell, ci) => {
           return `<div style="
             background:${rowBg};border:0.5px solid ${C.border};
