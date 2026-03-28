@@ -312,10 +312,16 @@ async function visualCheckAndFix(outputDir, scriptPath, opts, apiKey) {
     baseURL: process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com',
   });
 
-  const pngFiles = fs.readdirSync(outputDir)
-    .filter(f => /^slide_\d+\.png$/.test(f))
-    .sort()
-    .map(f => path.join(outputDir, f));
+  let pngFiles;
+  try {
+    pngFiles = fs.readdirSync(outputDir)
+      .filter(f => /^slide_\d+\.png$/.test(f))
+      .sort()
+      .map(f => path.join(outputDir, f));
+  } catch (e) {
+    console.warn(`  Skipping visual check (cannot read output dir: ${e.message})`);
+    return null;
+  }
 
   if (pngFiles.length === 0) return null;
 
