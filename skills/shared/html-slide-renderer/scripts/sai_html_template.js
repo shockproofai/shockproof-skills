@@ -69,7 +69,7 @@ module.exports = function createTemplate(config = {}) {
   ctx.addChrome = addChrome;
 
   const { addTitleSlide, addSectionSlide, addClosingSlide } = makeSlideLayouts(ctx);
-  const { addCard, addStatCard, cardHtml } = makeCards(ctx);
+  const { addCard, addStatCard, cardHtml, addCardGrid, lucideIconSvg } = makeCards(ctx);
   const { addCalloutBox, addBullets, addChecklist } = makeContent(ctx);
   const { addStepRow, addComparison, addStyledTable, tableHtml } = makeStructured(ctx);
   const { addKeyTakeaways, addRedFlagPairs, addReferencesSlide } = makeTakeaways(ctx);
@@ -81,10 +81,10 @@ module.exports = function createTemplate(config = {}) {
     C, FONT, ACCENTS, W, H,
     createPresentation,
     addChrome, addTitleSlide, addSectionSlide, addClosingSlide,
-    addCard, addStatCard, addCalloutBox,
+    addCard, addStatCard, addCardGrid, addCalloutBox,
     addStepRow, addComparison, addStyledTable, addKeyTakeaways,
     addRedFlagPairs, addChecklist, addBullets, addReferencesSlide,
     // Layout helpers
-    startRow, cardHtml, tableHtml, addRawHtml,
+    startRow, cardHtml, tableHtml, addRawHtml, lucideIconSvg,
   };
 };

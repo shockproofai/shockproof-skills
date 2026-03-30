@@ -302,6 +302,49 @@ Optional `opts`: `{ "bodyFontSize": 12, "titleFontSize": 16, "titleColor": "#1A3
 
 Styled table rendered as raw HTML for use inside `row`. Same props as `styledTable`.
 
+### cardGrid
+
+Responsive grid of 4–8 icon+title+description cards with per-card accent colors and inline Lucide icons. Auto-selects layout: 4→2×2, 5→3+2 centred, 6→3×2, 7→4+3 centred, 8→4×2. Auto-compacts for >6 cards.
+
+```json
+{
+  "type": "cardGrid",
+  "cards": [
+    { "title": "Desire", "description": "A burning desire to succeed is the foundation for success.", "icon": "flame", "color": "orange" },
+    { "title": "Purpose & Vision", "description": "Understanding the problem they solve.", "icon": "lightbulb", "color": "blue" },
+    { "title": "Self-Awareness", "description": "Knowing strengths and hiring for weaknesses.", "icon": "users", "color": "green" },
+    { "title": "Ability to Learn", "description": "Learning quickly from every mistake.", "icon": "brain", "color": "purple" },
+    { "title": "Tenacity", "description": "Staying power to weather setbacks.", "icon": "mountain", "color": "teal" },
+    { "title": "Integrity", "description": "The fundamental basis of any relationship.", "icon": "shield-check", "color": "pink" }
+  ]
+}
+```
+
+Each card object:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | ✓ | Card heading (2–5 words) |
+| `description` | string | ✓ | Card body text (15–40 words) |
+| `icon` | string | ✓ | Lucide icon name, kebab-case (e.g. `wallet`, `bar-chart-2`, `shield-check`) |
+| `color` | enum | ✓ | `orange`, `blue`, `green`, `purple`, `pink`, `teal`, `amber`, `red` |
+| `category` | string | — | Optional ALL-CAPS badge (e.g. `"FINANCE"`, `"REPORTING"`) |
+
+Optional `opts`: `{ "compact": false, "titleFontSize": 17, "descFontSize": 13, "iconSize": 32, "gap": 16 }`
+
+**When to use cardGrid vs. row with cardHtml:**
+- **cardGrid** → 4–8 distinct concepts that each have a title + description (features, qualities, categories)
+- **row with cardHtml** → 2–3 items side by side, each with optional bullet lists
+
+**Lucide icon selection**: Choose the most semantically appropriate icon. Common picks:
+- Finance: `wallet`, `banknote`, `credit-card`, `piggy-bank`, `coins`, `receipt`
+- Analytics: `chart-bar`, `chart-line`, `chart-pie`, `database`, `file-spreadsheet`
+- Business: `briefcase`, `building`, `presentation`, `clipboard`, `handshake`
+- People: `users`, `user`, `contact`, `phone`, `message-circle`
+- Security: `shield`, `shield-check`, `lock`, `key`, `eye`, `fingerprint`
+- Education: `book`, `book-open`, `graduation-cap`, `pencil`, `library`
+- Alerts: `alert-circle`, `alert-triangle`, `info`, `bell`, `check-circle`
+
 ### rawHtml
 
 Escape hatch for arbitrary HTML in the content flow.

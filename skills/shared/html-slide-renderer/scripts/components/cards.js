@@ -1,5 +1,7 @@
 'use strict';
 
+const LUCIDE_SVGS = require('./lucide-svgs');
+
 module.exports = function makeCards(ctx) {
   const { C, px, pt, esc } = ctx;
 
@@ -117,5 +119,130 @@ module.exports = function makeCards(ctx) {
     </div>`;
   }
 
-  return { addCard, addStatCard, cardHtml };
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CARD GRID — 4–8 cards in a responsive CSS Grid with inline Lucide icons
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Card-grid accent palette (softer tints for card backgrounds, vivid for icons/badges)
+  const CARD_GRID_COLORS = {
+    orange: { bg: '#FFF7ED', border: '#FDBA74', accent: '#f97316' },
+    blue:   { bg: '#EFF6FF', border: '#93C5FD', accent: '#3b82f6' },
+    green:  { bg: '#F0FDF4', border: '#86EFAC', accent: '#22c55e' },
+    purple: { bg: '#FAF5FF', border: '#D8B4FE', accent: '#a855f7' },
+    pink:   { bg: '#FDF2F8', border: '#F9A8D4', accent: '#ec4899' },
+    teal:   { bg: '#F0FDFA', border: '#5EEAD4', accent: '#14b8a6' },
+    amber:  { bg: '#FFFBEB', border: '#FCD34D', accent: '#f59e0b' },
+    red:    { bg: '#FEF2F2', border: '#FCA5A5', accent: '#ef4444' },
+  };
+
+  /**
+   * Render an inline SVG for a Lucide icon name.
+   * Returns '' if the icon is not found.
+   */
+  function lucideIconSvg(iconName, sizePx, color) {
+    const inner = LUCIDE_SVGS[iconName];
+    if (!inner) return '';
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${sizePx}" height="${sizePx}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+  }
+
+  /**
+   * Build a single card-grid card as an HTML string.
+   * @param {object} card - { title, description, icon, color, category? }
+   * @param {object} opts - { compact?, titleFontSize?, descFontSize?, iconSize? }
+   */
+  function cardGridCardHtml(card, opts = {}) {
+    const palette = CARD_GRID_COLORS[card.color] || CARD_GRID_COLORS.blue;
+    const compact       = opts.compact || false;
+    const iconSize      = opts.iconSize || (compact ? 24 : 32);
+    const titleFontSize = pt(opts.titleFontSize || (compact ? 14 : 17));
+    const descFontSize  = pt(opts.descFontSize  || (compact ? 11 : 13));
+    const pad           = compact ? '14px 16px' : '20px 22px';
+    const gap           = compact ? '8px' : '12px';
+
+    const iconHtml = card.icon
+      ? lucideIconSvg(card.icon, iconSize, palette.accent)
+      : '';
+
+    const categoryHtml = card.category
+      ? `<span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:${pt(9)}px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:${palette.accent};color:#fff;width:fit-content;">${esc(card.category)}</span>`
+      : '';
+
+    return `<div style="
+      background:${palette.bg};
+      border:1px solid ${palette.border};
+      border-radius:10px;
+      padding:${pad};
+      display:flex;
+      flex-direction:column;
+      gap:${gap};
+      overflow:hidden;
+      min-width:0;
+    ">
+      <div style="display:flex;align-items:center;gap:10px;">
+        ${iconHtml}
+        <div style="font-size:${titleFontSize}px;font-weight:700;color:${C.navy};line-height:1.25;">${esc(card.title)}</div>
+      </div>
+      ${categoryHtml}
+      <div style="font-size:${descFontSize}px;color:${C.gray};line-height:1.45;flex:1;">${esc(card.description)}</div>
+    </div>`;
+  }
+
+  /**
+   * Build the complete card-grid HTML and add it to the slide.
+   * @param {object}   slide  - Slide object with .add()
+   * @param {object[]} cards  - Array of { title, description, icon, color, category? }
+   * @param {object}   opts   - { compact?, titleFontSize?, descFontSize?, iconSize?, gap? }
+   */
+  function addCardGrid(slide, cards, opts = {}) {
+    const count = cards.length;
+    const gap = opts.gap || (count > 6 ? 12 : 16);
+
+    // Determine grid columns based on card count (matches archetype logic)
+    let gridStyle;
+    if (count <= 4) {
+      gridStyle = 'grid-template-columns:repeat(2,1fr);';
+    } else if (count === 5) {
+      // 3+2 centred: 6-column virtual grid, each card spans 2
+      gridStyle = 'grid-template-columns:repeat(6,1fr);';
+    } else if (count === 6) {
+      gridStyle = 'grid-template-columns:repeat(3,1fr);';
+    } else if (count === 7) {
+      // 4+3 centred: 8-column virtual grid, each card spans 2
+      gridStyle = 'grid-template-columns:repeat(8,1fr);';
+    } else {
+      gridStyle = 'grid-template-columns:repeat(4,1fr);';
+    }
+
+    // Auto-compact if many cards
+    const effectiveOpts = count > 6
+      ? { compact: true, ...opts }
+      : opts;
+
+    const cardHtmls = cards.map((card, i) => {
+      const html = cardGridCardHtml(card, effectiveOpts);
+      // For 5-card and 7-card layouts, offset the second row to centre it
+      let spanStyle = '';
+      if (count === 5 || count === 7) {
+        spanStyle = 'grid-column:span 2;';
+        // For 5 cards: card index 3 starts at col 2
+        if (count === 5 && i === 3) spanStyle = 'grid-column:2/span 2;';
+        // For 7 cards: card index 4 starts at col 2
+        if (count === 7 && i === 4) spanStyle = 'grid-column:2/span 2;';
+      }
+      return spanStyle
+        ? `<div style="${spanStyle}">${html}</div>`
+        : html;
+    });
+
+    slide.add(`<div style="
+      display:grid;
+      ${gridStyle}
+      gap:${gap}px;
+      flex:1;
+      min-height:0;
+      align-content:start;
+    ">${cardHtmls.join('\n')}</div>`);
+  }
+
+  return { addCard, addStatCard, cardHtml, addCardGrid, lucideIconSvg };
 };

@@ -28,6 +28,7 @@ Components auto-stack in a flexbox column between header and footer. **No manual
 | Text wrapping | Native CSS word-wrap and line-clamp |
 | Component placement | Auto-stacked in flex column; vertically centered |
 | Multi-column layouts | `row` component with `cardHtml`/`tableHtml` children |
+| Card grids (4–8 items) | `cardGrid` component with Lucide icons per card |
 | Rendering | HTML/CSS → cloud function (`renderHtmlToPng`) → PNG |
 | PDF assembly | `pdf-lib` via `@shockproof/deck-builder` |
 
@@ -256,7 +257,8 @@ The same JSON can also be submitted as a cloud agent job (`htmlDeckBuilder`) for
 
 | Content Type                        | Best Component                                |
 |-------------------------------------|-----------------------------------------------|
-| Introduction / overview (4 topics)  | 2 `row`s with 2 `cardHtml` children each      |
+| 4–8 features / qualities / concepts | `cardGrid` with icon + title + description    |
+| Introduction / overview (2–3 topics)| `row` with 2–3 `cardHtml` children             |
 | Numbered process / sequential steps | `stepRow` (max 5 alone, or 4 with callout; use `styledTable` if more) |
 | Bulleted knowledge points           | `bullets` (max 6–7 items)                    |
 | Checklist / requirements            | `checklist` (max 8 items)                    |

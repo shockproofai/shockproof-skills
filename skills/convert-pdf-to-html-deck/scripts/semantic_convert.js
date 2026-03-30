@@ -86,7 +86,7 @@ const DECK_SPEC_TOOL = {
                     type: 'string',
                     enum: ['card', 'statCard', 'calloutBox', 'bullets', 'checklist',
                            'stepRow', 'comparison', 'styledTable', 'redFlagPairs',
-                           'rawHtml', 'row'],
+                           'rawHtml', 'cardGrid', 'row'],
                   },
                   // Component-specific fields (all optional, depends on type)
                   accent: { type: 'string' },
@@ -104,6 +104,21 @@ const DECK_SPEC_TOOL = {
                   rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
                   flags: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
                   html: { type: 'string' },
+                  cards: {
+                    type: 'array',
+                    description: '4-8 cards for cardGrid component',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        title: { type: 'string' },
+                        description: { type: 'string' },
+                        icon: { type: 'string', description: 'Lucide icon name (kebab-case)' },
+                        color: { type: 'string', enum: ['orange', 'blue', 'green', 'purple', 'pink', 'teal', 'amber', 'red'] },
+                        category: { type: 'string', description: 'Optional ALL-CAPS category badge' },
+                      },
+                      required: ['title', 'description', 'icon', 'color'],
+                    },
+                  },
                   children: { type: 'array', items: { type: 'object' } },
                   opts: { type: 'object' },
                 },
@@ -203,7 +218,8 @@ Use the generate_deck_specification tool to output a complete DeckSpecification 
 - Bullet list (≤5 items) → bullets component
 - Bullet list (>5 items with "{short}: {long}" pattern) → styledTable component
 - Checklist items → checklist component
-- 2–4 cards side by side → row with cardHtml children
+- 4–8 distinct concepts/features with icon + title + description → cardGrid component
+- 2–3 cards side by side → row with cardHtml children
 - 2 tables side by side → row with tableHtml children
 - Single table → styledTable component
 - Tip/warning/callout → calloutBox component
@@ -222,8 +238,26 @@ When ≤5 items, use bullets with fontSize: 18 (3 items), 16 (4), 14 (5).
 ## Narration rules
 ${NARRATION_PRINCIPLES}
 
-## Color palette (hex values for accent fields)
-blue=#1A4FE8, green=#2E7D32, gold=#C17D10, red=#B91C1C, teal=#0F766E`;
+## Color palette (hex values for accent fields on card/stepRow/calloutBox)
+blue=#1A4FE8, green=#2E7D32, gold=#C17D10, red=#B91C1C, teal=#0F766E
+
+## cardGrid color names (NOT hex — use these string values for cardGrid cards)
+orange, blue, green, purple, pink, teal, amber, red
+Rotate through different colors so adjacent cards are visually distinct.
+
+## cardGrid Lucide icon selection
+Choose the most semantically appropriate Lucide icon (kebab-case) for each card.
+Common icons by domain:
+- Finance: wallet, banknote, credit-card, piggy-bank, coins, receipt, chart-candlestick
+- Analytics: chart-bar, chart-line, chart-pie, database, file-spreadsheet
+- Business: briefcase, building, presentation, clipboard, handshake, landmark
+- People: users, user, contact, phone, video, message-circle
+- Security: shield, shield-check, lock, key, eye, fingerprint
+- Education: book, book-open, graduation-cap, pencil, library
+- Settings: settings, cog, wrench, sliders, toggle-left
+- Health: heart, activity, stethoscope, pill, brain
+- Awards: trophy, medal, award, badge-check, star, crown
+- Alerts: alert-circle, alert-triangle, info, bell, check-circle`;
 
   const response = await client.messages.create({
     model: opts.model || 'claude-sonnet-4-6',
@@ -288,6 +322,7 @@ Downsize fix strategies (overflow):
 - stepRow: add "compact": true in opts
 - calloutBox: add "compact": true in opts
 - cardHtml (in row children): add "compact": true in opts for ALL children on that slide
+- cardGrid: add "compact": true in opts
 - bullets: add "fontSize": 10 in opts
 - styledTable: reduce rowH (e.g. 0.35 → 0.22) in opts
 
@@ -394,6 +429,8 @@ async function visualCheckAndFix(outputDir, spec, opts, apiKey) {
       } else if (comp.type === 'styledTable') {
         const currentRowH = comp.opts?.rowH || 0.35;
         comp.opts = { ...(comp.opts || {}), rowH: Math.max(0.22, currentRowH - 0.06) };
+      } else if (comp.type === 'cardGrid') {
+        comp.opts = { ...(comp.opts || {}), compact: true };
       } else if (comp.type === 'row' && comp.children) {
         for (const child of comp.children) {
           if (child.type === 'cardHtml') {
