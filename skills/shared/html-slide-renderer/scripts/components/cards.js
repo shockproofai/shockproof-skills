@@ -105,11 +105,13 @@ module.exports = function makeCards(ctx) {
       ? `<div style="font-size:${pt(titleFontSize)}px;font-weight:bold;color:${titleColor};line-height:1.25;margin-bottom:${titleMb}px;flex-shrink:0;">${esc(titleText)}</div>`
       : '';
 
+    const dim = opts.highlight?.length > 0 && !opts.highlight.includes(0) ? 'opacity:0.35;' : '';
+
     return `<div style="
       flex:1; min-width:0; min-height:0;
       background:${C.card}; border:1px solid ${C.border}; border-radius:2px;
       display:grid; grid-template-columns:${px(0.06)}px 1fr;
-      overflow:hidden;
+      overflow:hidden;${dim}
     ">
       <div style="background:${accentColor};border-radius:1px 0 0 1px;"></div>
       <div style="padding:${pad};display:flex;flex-direction:column;">
@@ -148,9 +150,10 @@ module.exports = function makeCards(ctx) {
   /**
    * Build a single card-grid card as an HTML string.
    * @param {object} card - { title, description, icon, color, category? }
-   * @param {object} opts - { compact?, titleFontSize?, descFontSize?, iconSize? }
+   * @param {object} opts - { compact?, titleFontSize?, descFontSize?, iconSize?, _dim? }
    */
   function cardGridCardHtml(card, opts = {}) {
+    const dimStyle = opts._dim || '';
     const palette = CARD_GRID_COLORS[card.color] || CARD_GRID_COLORS.blue;
     const compact       = opts.compact || false;
     const iconSize      = opts.iconSize || (compact ? 24 : 32);
@@ -176,7 +179,7 @@ module.exports = function makeCards(ctx) {
       flex-direction:column;
       gap:${gap};
       overflow:hidden;
-      min-width:0;
+      min-width:0;${dimStyle}
     ">
       <div style="display:flex;align-items:center;gap:10px;">
         ${iconHtml}
@@ -218,8 +221,12 @@ module.exports = function makeCards(ctx) {
       ? { compact: true, ...opts }
       : opts;
 
+    const hl = opts.highlight;
+    const hasHl = hl && hl.length > 0;
+
     const cardHtmls = cards.map((card, i) => {
-      const html = cardGridCardHtml(card, effectiveOpts);
+      const cardDim = hasHl && !hl.includes(i) ? 'opacity:0.35;' : '';
+      const html = cardGridCardHtml(card, { ...effectiveOpts, _dim: cardDim });
       // For 5-card and 7-card layouts, offset the second row to centre it
       let spanStyle = '';
       if (count === 5 || count === 7) {

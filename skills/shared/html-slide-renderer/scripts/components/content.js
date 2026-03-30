@@ -49,10 +49,16 @@ module.exports = function makeContent(ctx) {
       : fontSize;
     const itemGap = pt(dynSize) * 0.75;
 
-    const itemsHtml = items.map(item => `<div style="display:flex;align-items:flex-start;gap:8px;font-size:${pt(dynSize)}px;line-height:1.35;">
+    const hl = opts.highlight;
+    const hasHl = hl && hl.length > 0;
+
+    const itemsHtml = items.map((item, i) => {
+      const dim = hasHl && !hl.includes(i) ? 'opacity:0.35;' : '';
+      return `<div style="display:flex;align-items:flex-start;gap:8px;font-size:${pt(dynSize)}px;line-height:1.35;${dim}">
       <span style="color:${C.blue};font-weight:bold;font-size:${pt(dynSize + 1)}px;flex-shrink:0;">\u2022</span>
       <span>${boldPrefixHtml(item, color)}</span>
-    </div>`).join('\n');
+    </div>`;
+    }).join('\n');
 
     slide.add(`<div style="display:flex;flex-direction:column;gap:${itemGap}px;overflow:hidden;">${itemsHtml}</div>`);
   }
@@ -67,10 +73,16 @@ module.exports = function makeContent(ctx) {
       : fontSize;
     const itemGap = pt(dynSize) * 0.8;
 
-    const itemsHtml = items.map(item => `<div style="display:flex;align-items:flex-start;gap:8px;font-size:${pt(dynSize)}px;line-height:1.35;">
+    const hl = opts.highlight;
+    const hasHl = hl && hl.length > 0;
+
+    const itemsHtml = items.map((item, i) => {
+      const dim = hasHl && !hl.includes(i) ? 'opacity:0.35;' : '';
+      return `<div style="display:flex;align-items:flex-start;gap:8px;font-size:${pt(dynSize)}px;line-height:1.35;${dim}">
       <span style="color:${C.blue};font-weight:bold;font-size:${pt(dynSize + 1)}px;flex-shrink:0;">\u2022</span>
       <span>${boldPrefixHtml(item, C.navy)}</span>
-    </div>`).join('\n');
+    </div>`;
+    }).join('\n');
 
     slide.add(`<div style="display:flex;flex-direction:column;gap:${itemGap}px;overflow:hidden;">${itemsHtml}</div>`);
   }

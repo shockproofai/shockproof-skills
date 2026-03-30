@@ -16,11 +16,13 @@ module.exports = function makeStructured(ctx) {
     const descPt   = compact ? 8.5 : 10;
     const padV     = compact ? 5   : 8;
 
+    const dim = opts.highlight?.length > 0 && !opts.highlight.includes(0) ? 'opacity:0.35;' : '';
+
     slide.add(`<div style="
       display:grid; grid-template-columns:${px(0.07)}px 8px ${badgeS}px 8px 1fr;
       align-items:center;
       background:${C.white}; border-radius:5px;
-      overflow:hidden; flex-shrink:0; min-height:${minH}px;
+      overflow:hidden; flex-shrink:0; min-height:${minH}px;${dim}
     ">
       <div style="background:${C.blue};height:100%;border-radius:3px 0 0 3px;"></div>
       <div></div>
@@ -81,14 +83,18 @@ module.exports = function makeStructured(ctx) {
       ? opts.colWidths.map(w => typeof w === 'number' ? `${w}fr` : w).join(' ')
       : `repeat(${numCols}, 1fr)`;
 
+    const hl = opts.highlight;
+    const hasHl = hl && hl.length > 0;
+
     const rowsHtml = rows.map((row, ri) => {
       const isHeader = ri === 0;
       const isEven = ri % 2 === 0;
       const rowBg = isHeader ? C.blue : (isEven ? C.card : C.white);
       const textFill = isHeader ? C.white : C.navy;
       const fontW = isHeader ? 'bold' : 'normal';
+      const dim = hasHl && !isHeader && !hl.includes(ri) ? 'opacity:0.35;' : '';
 
-      return `<div style="display:grid;grid-template-columns:${gridCols};min-height:${rowH}px;">
+      return `<div style="display:grid;grid-template-columns:${gridCols};min-height:${rowH}px;${dim}">
         ${row.map((cell, ci) => {
           return `<div style="
             background:${rowBg};border:0.5px solid ${C.border};
@@ -119,17 +125,18 @@ module.exports = function makeStructured(ctx) {
       ? opts.colWidths.map(w => typeof w === 'number' ? `${w}fr` : w).join(' ')
       : `repeat(${numCols}, 1fr)`;
 
+    const hl = opts.highlight;
+    const hasHl = hl && hl.length > 0;
+
     const rowsHtml = rows.map((row, ri) => {
       const isHeader = ri === 0;
       const isEven   = ri % 2 === 0;
       const rowBg    = isHeader ? C.blue : (isEven ? C.card : C.white);
       const textFill = isHeader ? C.white : C.navy;
       const fontW    = isHeader ? 'bold' : 'normal';
+      const dim = hasHl && !isHeader && !hl.includes(ri) ? 'opacity:0.35;' : '';
 
-      // flex:1 + min-height:0 on each row lets the flexbox chain distribute
-      // available height equally — rows compress automatically when the slide
-      // title is tall (e.g. wraps to two lines) without overflowing.
-      return `<div style="display:grid;grid-template-columns:${gridCols};flex:1;min-height:0;">
+      return `<div style="display:grid;grid-template-columns:${gridCols};flex:1;min-height:0;${dim}">
         ${row.map((cell, ci) => {
           return `<div style="
             background:${rowBg};border:0.5px solid ${C.border};

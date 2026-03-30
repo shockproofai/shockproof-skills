@@ -355,6 +355,30 @@ Escape hatch for arbitrary HTML in the content flow.
 
 ---
 
+## Highlighting (Progressive Disclosure)
+
+Components that render indexed items support an optional `highlight: number[]` property for progressive disclosure. When present, items at the specified 0-based indices render at full opacity; all other items dim to `opacity: 0.35`. When absent, everything renders normally.
+
+**Usage**: The `slideHighlightExpander` agent deep-clones slides, sets `highlight` on target components, and rewrites narration per copy. Initial deck generation should NOT use `highlight`.
+
+| Component | `highlight` indices reference | Example |
+|---|---|---|
+| `bullets` | `items[]` indices | `"highlight": [0, 2]` → items 0 and 2 full, rest dimmed |
+| `checklist` | `items[]` indices | Same as bullets |
+| `stepRow` | Self (single item) | `"highlight": [0]` → this step full; omit or `[]` → dimmed |
+| `styledTable` | `rows[]` indices (1-based data rows; header never dims) | `"highlight": [1, 3]` → data rows 1 and 3 full |
+| `cardGrid` | `cards[]` indices | `"highlight": [0, 4]` → cards 0 and 4 full |
+| `redFlagPairs` | `flags[]` indices | `"highlight": [0, 2]` → pairs 0 and 2 full |
+| `row` | `children[]` indices | `"highlight": [0]` → first child full, rest dimmed |
+| `cardHtml` (row child) | Self | `"highlight": [0]` → full; omit → normal |
+| `tableHtml` (row child) | `rows[]` indices | Same as styledTable |
+
+```json
+{ "type": "bullets", "items": ["Alpha", "Beta", "Gamma"], "highlight": [1] }
+```
+
+---
+
 ## Dynamic Font Sizing
 
 | Component       | Trigger    | Behavior                               |
