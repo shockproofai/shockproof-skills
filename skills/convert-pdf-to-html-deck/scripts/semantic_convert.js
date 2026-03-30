@@ -212,28 +212,43 @@ Use the generate_deck_specification tool to output a complete DeckSpecification 
 - References/resources → type: "references"
 - All other content → type: "content" with appropriate components
 
-## Content component selection
-- Numbered step sequence → stepRow components (one per step)
-- Side-by-side comparison → comparison component
-- Bullet list (≤5 items) → bullets component
-- Bullet list (>5 items with "{short}: {long}" pattern) → styledTable component
-- Checklist items → checklist component
-- 4–8 distinct concepts/features with icon + title + description → cardGrid component
-- 2–3 cards side by side → row with cardHtml children
-- 2 tables side by side → row with tableHtml children
-- Single table → styledTable component
-- Tip/warning/callout → calloutBox component
-- Warning pairs → redFlagPairs component
-- Stat/metric highlights → row with cardHtml children (big number as title)
+## Content component selection (evaluate in this order — first match wins)
+1. Numbered/sequential steps → stepRow (one per step, max 5)
+2. Side-by-side comparison (pros/cons, old/new) → comparison
+3. Warning sign pairs → redFlagPairs (exactly 6 pairs)
+4. Single tip, principle, or callout → calloutBox
+5. Checklist / requirements (pass/fail items) → checklist
+6. 4–8 PARALLEL concepts where each item is an EQUAL-WEIGHT standalone idea (e.g. personal qualities, product features, service categories, team roles) AND each item has a short title + 1–2 sentence description that can stand alone → cardGrid
+7. 2–3 topics side by side → row with cardHtml children
+8. Tabular data with ≥3 columns → styledTable
+9. 4–8 items with "{shortLabel}: {longDescription}" pattern → styledTable (2-col)
+10. ≤5 supporting points under a heading → bullets
+11. Stat/metric highlights → row with cardHtml (statCard style)
+12. Everything else → bullets or rawHtml
 
-## Bullet list conversion rules
+### cardGrid vs. bullets/styledTable decision
+Use cardGrid when ALL of these are true:
+- There are 4–8 items (hard requirement)
+- Each item represents a DISTINCT, EQUAL-WEIGHT concept (not sub-points of one idea)
+- Each item has a natural 1–3 word title AND a separate description sentence
+- A meaningful icon can represent each concept (not generic list items)
+- The items are NOT sequential steps, NOT a checklist, NOT tabular data
+
+Do NOT use cardGrid when:
+- Items are sub-bullets elaborating on a single topic (use bullets)
+- Items are definition-style "Term: Definition" without distinct conceptual identity (use styledTable)
+- Items have a natural ordering/sequence (use stepRow)
+- There are fewer than 4 or more than 8 items
+
+### Bullet list sizing
+When ≤5 items, use bullets with fontSize: 18 (3 items), 16 (4), 14 (5).
+
+### styledTable sizing
 When items follow "{shortLabel}: {longDescription}" pattern and count > 5, use styledTable:
 - Row 0 is header — choose column names matching the data
 - Each row is [shortLabel, longDescription] without the colon
 - Set colWidths proportional to content: e.g. [1, 3] for short + long
 - Set rowH to fill: 0.38 for 6 rows, 0.32 for 7-8, 0.28 for 9+
-
-When ≤5 items, use bullets with fontSize: 18 (3 items), 16 (4), 14 (5).
 
 ## Narration rules
 ${NARRATION_PRINCIPLES}

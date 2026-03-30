@@ -257,7 +257,7 @@ The same JSON can also be submitted as a cloud agent job (`htmlDeckBuilder`) for
 
 | Content Type                        | Best Component                                |
 |-------------------------------------|-----------------------------------------------|
-| 4–8 features / qualities / concepts | `cardGrid` with icon + title + description    |
+| 4–8 parallel, equal-weight concepts (features, qualities, categories) each with title + description + icon | `cardGrid` |
 | Introduction / overview (2–3 topics)| `row` with 2–3 `cardHtml` children             |
 | Numbered process / sequential steps | `stepRow` (max 5 alone, or 4 with callout; use `styledTable` if more) |
 | Bulleted knowledge points           | `bullets` (max 6–7 items)                    |
@@ -268,6 +268,20 @@ The same JSON can also be submitted as a cloud agent job (`htmlDeckBuilder`) for
 | Important tip or principle          | `calloutBox`                                 |
 | Warning signs / red flags           | `redFlagPairs` (exactly 6 pairs)             |
 | Two-topic deep dive                 | `row` with 2 `cardHtml` + `calloutBox`       |
+
+### When to use `cardGrid` vs. `bullets` / `styledTable`
+
+Use `cardGrid` when ALL of these are true:
+- 4–8 items (hard min/max)
+- Each item is a **distinct, equal-weight concept** (not sub-points of one idea)
+- Each has a natural 1–3 word title AND a separate description sentence
+- A meaningful Lucide icon can represent each concept
+
+Do NOT use `cardGrid` when:
+- Items are sub-bullets elaborating on a single topic → `bullets`
+- Items are definition-style "Term: Definition" without distinct conceptual identity → `styledTable`
+- Items have a natural ordering/sequence → `stepRow`
+- Fewer than 4 or more than 8 items
 
 ## Variety Matters
 
