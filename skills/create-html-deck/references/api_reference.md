@@ -1,25 +1,21 @@
-# Shockproof AI HTML Template — API Reference
+# DeckSpecification JSON — API Reference
 
-Flow-based layout API. Components auto-stack in a flexbox column between header and footer.
-The browser handles all spacing, wrapping, and overflow natively — no manual coordinates needed.
+Declarative JSON format for Shockproof AI slide decks. Each spec is interpreted by `@shockproof/deck-builder` into HTML, rendered to PNGs, and assembled into PDF with optional narration.
 
 ## Quick Start
 
-```js
-const tpl = require("/path/to/sai_html_template.js")({
-  seriesTitle: "Your Series Name",
-  totalModules: 3,
-});
-const {
-  C, createPresentation,
-  addChrome, addTitleSlide, addSectionSlide, addClosingSlide,
-  addCard, addStatCard, addCalloutBox, addStepRow, addComparison, addStyledTable,
-  addKeyTakeaways, addRedFlagPairs, addChecklist, addBullets, addReferencesSlide,
-  startRow, cardHtml, addRawHtml,
-} = tpl;
-
-const pres = createPresentation();
-const MODULE_NUM = 1, MODULE_TITLE = "Module Title", TOTAL_PAGES = 40;
+```json
+{
+  "config": {
+    "seriesTitle": "Your Series Name",
+    "totalModules": 3
+  },
+  "slides": [
+    { "type": "title", "moduleNum": 1, "title": "Module Title", "subtitle": "Optional subtitle", "totalPages": 40, "narration": "Welcome to Module 1..." },
+    { "type": "content", "chrome": { "title": "Key Points", "moduleNum": 1, "moduleTitle": "Module Title", "pageNum": 2, "totalPages": 40 }, "components": [...], "narration": "This slide covers..." },
+    { "type": "closing", "moduleNum": 1, "moduleTitle": "Module Title", "totalPages": 40, "narration": "Thank you..." }
+  ]
+}
 ```
 
 ## Slide Canvas
@@ -30,192 +26,319 @@ const MODULE_NUM = 1, MODULE_TITLE = "Module Title", TOTAL_PAGES = 40;
 - **Content alignment**: Vertically centered — sparse slides have balanced whitespace above and below
 - **Font**: Carlito (system-installed, used by Puppeteer/Chromium)
 
-## Color Palette (C object)
+## Color Palette
 
-| Key        | Hex     | Usage                            |
-|------------|---------|----------------------------------|
-| C.blue     | 1A4FE8  | Primary accent, buttons, headers |
-| C.navy     | 1A3068  | Title text, body text            |
-| C.green    | 2E7D32  | Positive / approved accent       |
-| C.gold     | C17D10  | Callout titles, warning accent   |
-| C.red      | B91C1C  | Negative / declined accent       |
-| C.teal     | 0F766E  | Fifth accent color               |
-| C.bg       | F8F9FC  | Slide background                 |
-| C.card     | EEF2FF  | Card fill                        |
-| C.gray     | 666666  | Body text, footer text           |
-| C.ltGray   | 999999  | Subtle text                      |
-| C.footerBg | E8EDF8  | Footer bar fill                  |
+Use these hex strings for `accent` fields in components.
 
-ACCENTS array: `[C.blue, C.green, C.gold, C.red, C.teal]`
+| Name     | Hex       | Usage                            |
+|----------|-----------|----------------------------------|
+| blue     | `#1A4FE8` | Primary accent, buttons, headers |
+| navy     | `#1A3068` | Title text, body text            |
+| green    | `#2E7D32` | Positive / approved accent       |
+| gold     | `#C17D10` | Callout titles, warning accent   |
+| red      | `#B91C1C` | Negative / declined accent       |
+| teal     | `#0F766E` | Fifth accent color               |
+
+Accent rotation: `["#1A4FE8", "#2E7D32", "#C17D10", "#B91C1C", "#0F766E"]`
 
 ---
 
-## Presentation & Output
+## Slide Types
 
-### createPresentation()
-Returns a presentation object.
-- `pres.addSlide(bgColor?)` — creates and returns a new Slide; optional background color
-- `pres.toPNGsAndPDF(outputDir, pdfPath)` — async; renders PNGs via Puppeteer + assembles PDF + writes narration JSON + writes Narakeet script
-- `pres.toPNGs(outputDir)` — async; PNGs only + writes narration JSON + writes Narakeet script
-- `pres.toPDF(outputPath, pngPaths?)` — async; PDF only (from existing PNGs)
-- `pres.writeNarration(outputDir)` — writes `slide-narration.json` from per-slide `.narrate()` calls
-- `pres.writeNarakeetScript(outputDir, opts?)` — writes `narakeet-script.md` from PNGs + narration. opts: `{ voice, size, transition }`
-- `pres.writeNarakeetZip(outputDir)` — async; creates `narakeet.zip` containing `narakeet-script.md` + all slide PNGs (level 9 compression)
-- `pres.submitToNarakeet(outputDir, opts?)` — async; uploads ZIP to Narakeet API, polls for video build, downloads `.mp4` locally. opts: `{ videoFilename }`. Returns path to downloaded video. API key resolved: env `NARAKEET_API_KEY` → `gcloud` CLI → Secret Manager Node client
+### title
 
-```js
-pres.toPNGsAndPDF("mnt/outputs/MyModule/", "mnt/outputs/MyModule.pdf")
-  .then(() => console.log("Done"))
-  .catch(err => { console.error(err); process.exit(1); });
+Creates a special layout title slide (not flow-based). Page 1 of the module.
+
+```json
+{
+  "type": "title",
+  "moduleNum": 1,
+  "title": "Inventory Financing Fundamentals",
+  "subtitle": "Understanding Collateral Valuation",
+  "totalPages": 40,
+  "narration": "Welcome to Module 1..."
+}
 ```
 
-### slide.narrate(text)
-Set the TTS narration for a slide. Returns the slide for chaining. Called inline during slide creation:
+Title auto-downsizes: >60 chars → 38pt, >80 chars → 34pt, >100 chars → 30pt.
 
-```js
-addTitleSlide(pres, 1, "Title", "Subtitle", 40)
-  .narrate("Welcome to Module 1...");
+### section
 
-// Or on content slides:
-slide.narrate("This slide covers the key points...");
+Navy section divider (special layout). Uses white logo variant.
+
+```json
+{
+  "type": "section",
+  "title": "Core Concepts",
+  "subtitle": "Building a strong foundation",
+  "moduleNum": 1,
+  "moduleTitle": "Inventory Financing Fundamentals",
+  "pageNum": 3,
+  "totalPages": 40,
+  "narration": "Now let's dive into core concepts."
+}
 ```
 
-Narration is automatically written to `slide-narration.json` by `toPNGs()` / `toPNGsAndPDF()`.
+### content
+
+Flow-based slide with chrome (header + footer) and auto-stacking components.
+
+```json
+{
+  "type": "content",
+  "chrome": {
+    "title": "Process Overview",
+    "moduleNum": 1,
+    "moduleTitle": "Inventory Financing Fundamentals",
+    "pageNum": 4,
+    "totalPages": 40
+  },
+  "components": [
+    { "type": "stepRow", "num": 1, "title": "First Step", "description": "Description." },
+    { "type": "stepRow", "num": 2, "title": "Second Step", "description": "Description." },
+    { "type": "calloutBox", "title": "Key Insight", "body": "Summary of the process." }
+  ],
+  "narration": "This slide outlines the five-step process..."
+}
+```
+
+Chrome title auto-downsizes: >45 chars → 24pt, >60 chars → 20pt.
+
+### keyTakeaways
+
+Creates chrome internally (title = "Key Takeaways"). Max 4 items.
+
+```json
+{
+  "type": "keyTakeaways",
+  "moduleNum": 1,
+  "moduleTitle": "Inventory Financing Fundamentals",
+  "pageNum": 38,
+  "totalPages": 40,
+  "takeaways": [
+    { "title": "Takeaway 1", "desc": "Description..." },
+    { "title": "Takeaway 2", "desc": "Description..." },
+    { "title": "Takeaway 3", "desc": "Description..." },
+    { "title": "Takeaway 4", "desc": "Description..." }
+  ],
+  "narration": "Let's review the four key takeaways..."
+}
+```
+
+### references
+
+Creates its own slide with chrome (title = "References & Resources").
+
+```json
+{
+  "type": "references",
+  "moduleNum": 1,
+  "moduleTitle": "Inventory Financing Fundamentals",
+  "pageNum": 39,
+  "totalPages": 40,
+  "references": [
+    { "category": "Regulatory Guidance", "items": ["OCC Handbook", "FDIC Manual", "Fed SR Letters"] },
+    { "category": "Industry Standards", "items": ["RMA Guidelines", "AICPA Guides"] }
+  ],
+  "narration": "Here are the key references..."
+}
+```
+
+### closing
+
+Creates closing slide (special layout). Pass `nextModuleNum`/`nextModuleTitle` for "Next:" text, or omit for "Series Complete" variant.
+
+```json
+{
+  "type": "closing",
+  "moduleNum": 1,
+  "moduleTitle": "Inventory Financing Fundamentals",
+  "nextModuleNum": 2,
+  "nextModuleTitle": "Accounts Receivable Analysis",
+  "totalPages": 40,
+  "narration": "Thank you for completing Module 1. (pause: 1) Thank you."
+}
+```
 
 ---
 
-## Slide Structure Functions
+## Component Types (for `content` slides)
 
-### addChrome(slide, pres, title, moduleNum, moduleTitle, pageNum, totalPages)
-Sets up header (blue bar, logo, title) + footer on a flow slide. Components added after this auto-stack below the header. Long titles auto-downsize (>45 chars → 24pt, >60 chars → 20pt) and wrap to 2 lines max.
+All components auto-stack in a flexbox column within the content area.
 
-### addTitleSlide(pres, moduleNum, title, subtitle, totalPages)
-Creates a new title slide (special layout, not flow). Title auto-downsizes for long text. Returns slide.
+### card
 
-### addSectionSlide(pres, title, subtitle, moduleNum, moduleTitle, pageNum, totalPages)
-Creates a navy section divider (special layout). Uses white logo variant. Returns slide.
+Accent-bordered info box filling available width.
 
-### addClosingSlide(pres, moduleNum, moduleTitle, nextModuleNum, nextModuleTitle, nextModuleDesc, totalPages)
-Creates closing slide. Uses white logo variant. Pass `null` for next* if last module. Returns slide.
-
----
-
-## Content Components (Flow-Based)
-
-All components below are added via `slide.add()` internally and auto-stack in the flex column.
-
-### addCard(slide, pres, accentColor, titleText, bodyText, opts?)
-Single card that fills available width. opts: `{ bodyFontSize, titleFontSize, titleColor, height }`
-
-`bodyText` accepts:
-- **String** — rendered as wrapped prose
-- **Array of strings** — rendered as bulleted list (auto-shrinks for >4 items)
-
-**For side-by-side cards, use `startRow()` + `cardHtml()` instead** (see Layout Helpers below).
-
-### addStatCard(slide, pres, accentColor, statVal, statLabel, opts?)
-Big number card. opts: `{ height }`
-
-### addCalloutBox(slide, pres, titleText, bodyText, opts?)
-Blue accent bar + gold title. opts: `{ height }`
-
-### addStepRow(slide, pres, num, title, description)
-Numbered step card. Auto-stacks — just call multiple times for a step sequence.
-
-```js
-addStepRow(slide, pres, 1, "First Step", "Description.");
-addStepRow(slide, pres, 2, "Second Step", "Description.");
-addStepRow(slide, pres, 3, "Third Step", "Description.");
+```json
+{ "type": "card", "accent": "#1A4FE8", "title": "Card Title", "body": "Prose text or array." }
 ```
 
-### addComparison(slide, pres, leftTitle, leftBody, rightTitle, rightBody, opts?)
-Two-column comparison (red left, green right). Each body splits on `\n` into bullet items. opts: `{ height }`
+`body` accepts:
+- **String** → rendered as wrapped prose
+- **Array of strings** → rendered as bulleted list (auto-shrinks for >4 items)
 
-```js
-addComparison(slide, pres,
-  "Traditional", "Point 1\nPoint 2\nPoint 3",
-  "Modern", "Better 1\nBetter 2\nBetter 3"
-);
+Optional `opts`: `{ "bodyFontSize": 12, "titleFontSize": 16, "titleColor": "#1A3068", "height": "auto" }`
+
+**For side-by-side cards, use `row` with `cardHtml` children** (see below).
+
+### statCard
+
+Big number + label card.
+
+```json
+{ "type": "statCard", "accent": "#2E7D32", "value": "85%", "label": "Approval Rate" }
 ```
 
-### addStyledTable(slide, pres, rows, opts?)
-Blue-header table with alternating rows. rows = 2D array, row[0] = headers. opts: `{ fontSize, rowH }`
+Optional `opts`: `{ "height": "auto" }`
 
-**IMPORTANT — `rowH` is in INCHES (multiplied by SCALE=128 internally).** Do NOT pass pixel values.
+### calloutBox
+
+Blue accent bar + gold title.
+
+```json
+{ "type": "calloutBox", "title": "Important Note", "body": "This is the callout text." }
+```
+
+Optional `opts`: `{ "compact": false, "height": "auto" }`
+
+### bullets
+
+Bulleted list with bold-prefix auto-formatting. Auto-shrinks for >6 items.
+
+```json
+{ "type": "bullets", "items": ["Point One: Description.", "Point Two: Description."] }
+```
+
+Optional `opts`: `{ "fontSize": 12, "color": "#1A3068" }`
+
+### checklist
+
+Bulleted checklist with bold-prefix. Auto-shrinks for >8 items.
+
+```json
+{ "type": "checklist", "items": ["Requirement One: Details.", "Requirement Two: Details."] }
+```
+
+Optional `opts`: `{ "fontSize": 12 }`
+
+### stepRow
+
+Numbered step card. Auto-stacks — add multiple for a step sequence.
+
+```json
+{ "type": "stepRow", "num": 1, "title": "First Step", "description": "Description of step." }
+```
+
+Optional `opts`: `{ "compact": false }`
+
+### comparison
+
+Two-column comparison (red left, green right). Each body splits on `\n` into bullet items.
+
+```json
+{
+  "type": "comparison",
+  "leftTitle": "Traditional",
+  "leftBody": "Point 1\nPoint 2\nPoint 3",
+  "rightTitle": "Modern",
+  "rightBody": "Better 1\nBetter 2\nBetter 3"
+}
+```
+
+Optional `opts`: `{ "height": "auto" }`
+
+### styledTable
+
+Blue-header table with alternating rows. Row 0 = headers.
+
+```json
+{
+  "type": "styledTable",
+  "rows": [
+    ["Category", "Rate", "Risk"],
+    ["Raw Materials", "50-65%", "Low"],
+    ["Finished Goods", "60-75%", "Medium"]
+  ]
+}
+```
+
+Optional `opts`: `{ "fontSize": 11, "rowH": 0.35, "colWidths": [2, 1, 1] }`
+
+**`rowH` is in INCHES (multiplied by SCALE=128 internally).** Never pass pixel values.
 - Default: `0.35` inches (≈45px) — good for 4–5 rows
 - Compact (6–7 rows): `0.28` inches (≈36px)
 - Extra-compact (8+ rows): `0.22` inches (≈28px)
-- `cardHtml` body supports arrays for bullet lists: `cardHtml(C.blue, "Title", ["item 1", "item 2"])`
 
-### addKeyTakeaways(slide, pres, moduleNum, moduleTitle, pageNum, totalPages, takeaways)
-Numbered takeaway list. Calls addChrome internally. You must create the slide first.
-takeaways = `[{ title, desc }, ...]` — max 4 items.
+### redFlagPairs
 
-### addRedFlagPairs(slide, flags)
-Two-column warning grid. flags = `[[leftText, rightText], ...]` — max 6 pairs.
-Does NOT add chrome — call addChrome first.
+Two-column warning grid. Max 6 pairs. Does NOT add chrome — must be inside a `content` slide.
 
-### addChecklist(slide, items, opts?)
-Bulleted checklist with bold-prefix. opts: `{ fontSize }`
-Auto-shrinks for >8 items.
-
-### addBullets(slide, items, opts?)
-Bulleted list with bold-prefix. opts: `{ fontSize, color }`
-Auto-shrinks for >6 items.
-
-### addReferencesSlide(pres, moduleNum, moduleTitle, pageNum, totalPages, references)
-Creates a new slide with chrome. references = `[{ category, items: [string] }, ...]`.
-
----
-
-## Layout Helpers
-
-### startRow()
-Creates a flex row collector for side-by-side elements.
-
-```js
-const row = startRow();
-row.add(cardHtml(C.blue, "Title A", "Body A"));
-row.add(cardHtml(C.green, "Title B", "Body B"));
-slide.add(row.html());
+```json
+{ "type": "redFlagPairs", "flags": [["Left flag 1", "Right flag 1"], ["Left flag 2", "Right flag 2"]] }
 ```
 
-### cardHtml(accentColor, titleText, bodyText, opts?)
-Returns raw card HTML string (not added to slide). Use with `startRow()` for side-by-side cards.
-opts: `{ bodyFontSize, titleFontSize, titleColor }`
+### row
 
-### addRawHtml(slide, html)
-Insert arbitrary HTML into the content flow. Use sparingly.
+Flex row for side-by-side elements. Children must be `cardHtml` or `tableHtml`.
+
+```json
+{
+  "type": "row",
+  "children": [
+    { "type": "cardHtml", "accent": "#1A4FE8", "title": "Topic A", "body": "Description A" },
+    { "type": "cardHtml", "accent": "#2E7D32", "title": "Topic B", "body": ["Item 1", "Item 2"] }
+  ]
+}
+```
+
+#### cardHtml (row child)
+
+Card rendered as raw HTML for use inside `row`. Same props as `card`.
+
+Optional `opts`: `{ "bodyFontSize": 12, "titleFontSize": 16, "titleColor": "#1A3068", "compact": false }`
+
+#### tableHtml (row child)
+
+Styled table rendered as raw HTML for use inside `row`. Same props as `styledTable`.
+
+### rawHtml
+
+Escape hatch for arbitrary HTML in the content flow.
+
+```json
+{ "type": "rawHtml", "html": "<div style='text-align:center;'>Custom content</div>" }
+```
 
 ---
 
 ## Dynamic Font Sizing
 
-| Component       | Trigger              | Behavior                               |
-|----------------|----------------------|----------------------------------------|
-| addCard (arr)   | >4 items             | ~0.4pt shrink per extra item (min 8.5) |
-| addBullets      | >6 items             | ~0.75pt shrink per extra item          |
-| addChecklist    | >8 items             | ~0.5pt per 2 extra items               |
-| addChrome title | >45 chars            | 28pt → 24pt → 20pt                    |
-| addTitleSlide   | >60 chars            | 44pt → 38pt → 34pt → 30pt             |
+| Component       | Trigger    | Behavior                               |
+|----------------|------------|----------------------------------------|
+| card (array body) | >4 items   | ~0.4pt shrink per extra item (min 8.5) |
+| bullets         | >6 items   | ~0.75pt shrink per extra item          |
+| checklist       | >8 items   | ~0.5pt per 2 extra items               |
+| chrome title    | >45 chars  | 28pt → 24pt → 20pt                    |
+| title slide     | >60 chars  | 44pt → 38pt → 34pt → 30pt             |
 
 ## Standard 40-Slide Structure
 
-| Slides | Purpose                   | Components                                 |
+| Slides | Purpose                   | Slide Type                                 |
 |--------|---------------------------|--------------------------------------------|
-| 1      | Title                     | addTitleSlide                              |
-| 2      | Learning Objectives       | addChrome + 2 rows of cardHtml             |
-| 3      | Section A divider         | addSectionSlide                            |
-| 4-8    | Core content (5 slides)   | addChrome + mix of components              |
-| 9      | Section B divider         | addSectionSlide                            |
-| 10-18  | Deep-dive content         | addChrome + mix                            |
-| 19     | Red Flags                 | addChrome + addRedFlagPairs                |
-| 20-34  | Case Studies (3×5 slides) | addSectionSlide + content                  |
-| 35     | Section F divider         | addSectionSlide                            |
-| 36-37  | Best practices            | addChrome + mix                            |
-| 38     | Key Takeaways             | addKeyTakeaways                            |
-| 39     | References                | addReferencesSlide                         |
-| 40     | Closing                   | addClosingSlide                            |
+| 1      | Title                     | `title`                                    |
+| 2      | Learning Objectives       | `content` with 2 `row`s of `cardHtml`      |
+| 3      | Section A divider         | `section`                                  |
+| 4-8    | Core content (5 slides)   | `content` with mix of components           |
+| 9      | Section B divider         | `section`                                  |
+| 10-18  | Deep-dive content         | `content` with mix                         |
+| 19     | Red Flags                 | `content` with `redFlagPairs`              |
+| 20-34  | Case Studies (3×5 slides) | `section` + `content`                      |
+| 35     | Section F divider         | `section`                                  |
+| 36-37  | Best practices            | `content` with mix                         |
+| 38     | Key Takeaways             | `keyTakeaways`                             |
+| 39     | References                | `references`                               |
+| 40     | Closing                   | `closing`                                  |
 
 ## Content Guidelines
 

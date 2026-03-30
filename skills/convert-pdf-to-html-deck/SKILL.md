@@ -9,8 +9,8 @@ Keeps the original PDF page visuals as PNGs. Adds AI-generated narration and sub
 Best when: you want fast conversion without changing the visual appearance.
 
 ### Semantic mode (default)
-Claude analyzes the PDF content and generates a new build script using sai_html_template.js components.
-Re-renders every slide with the Shockproof AI brand. Narration is written from the re-rendered component content.
+Claude analyzes the PDF content and generates a DeckSpecification JSON using `@shockproof/deck-builder` components.
+Re-renders every slide with the Shockproof AI brand via `buildDeck()`. Narration is included as `narration` fields in each slide.
 Best when: you want Shockproof AI styling, editable slides, and full component-model output.
 
 ## Quick start
@@ -47,7 +47,7 @@ node scripts/convert.js <pdf-path> [options]
 | `@anthropic-ai/sdk` | Narration generation + semantic component mapping |
 | `pdf-parse` | Per-page text extraction from PDF |
 | `pdfjs-dist` | Per-page text extraction (semantic mode) |
-| `shared/html-slide-renderer` | HTML rendering, cloud function PNG screenshots, Narakeet submission |
+| `@shockproof/deck-builder` | DeckSpecification interpretation, HTML rendering, PNG rendering, PDF assembly, narration |
 | `archiver` (from shared renderer) | ZIP creation for Narakeet upload |
 | `pdftoppm` (system, poppler-utils) | **Lossless mode only** — local PDF rasterisation, no cloud call needed |
 
@@ -82,16 +82,15 @@ Lossless mode runs `pdftoppm` locally to rasterise each PDF page to a 1280px-wid
 | Mode | Model | Reason |
 |------|-------|--------|
 | Lossless narration | `claude-sonnet-4-6` | Plain text input |
-| Semantic | `claude-sonnet-4-6` | All steps: build script generation, auto-fix, layout fix, visual overflow check |
+| Semantic | `claude-sonnet-4-6` | All steps: DeckSpecification generation (structured output), visual overflow check/fix |
 
 ## Shared renderer
 
-This skill uses the renderer from:
-```
-skills/shared/html-slide-renderer/scripts/sai_html_template.js
-```
+This skill uses `@shockproof/deck-builder` (monorepo: `packages/deck-builder/`) for all rendering.
+The DeckSpecification JSON schema is defined in `packages/deck-builder/src/schema.ts`.
+See `create-html-deck/references/api_reference.md` for the full component reference.
 
-Do NOT duplicate renderer code here. All slide rendering and Narakeet submission goes through the shared renderer.
+Do NOT duplicate renderer code here. All slide rendering and Narakeet submission goes through `buildDeck()`.
 
 ## API key requirements
 
@@ -109,8 +108,8 @@ Note: `ANTHROPIC_API_KEY` must be set — all steps use `claude-sonnet-4-6`. The
 | File | Description |
 |------|-------------|
 | `slide_001.png` … | Slide images (lossless: from PDF; semantic: re-rendered HTML) |
-| `slide-narration.json` | Per-slide narration text |
+| `deck_specification.json` | DeckSpecification with narration in each slide's `narration` field |
 | `narakeet-script.md` | Narakeet video script |
 | `narakeet.zip` | Compressed archive for Narakeet upload |
-| `build_script_generated.js` | *(Semantic only)* Generated build script from Claude |
+| `deck_specification.json` | *(Semantic only)* DeckSpecification JSON from Claude (structured output) |
 | `output.mp4` | Final narrated video |
