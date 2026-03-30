@@ -24,6 +24,12 @@ const API_REFERENCE = fs.readFileSync(
   'utf8'
 );
 
+// Read narration principles (full TTS rules, phonetic table, formatting mandates)
+const NARRATION_PRINCIPLES = fs.readFileSync(
+  path.join(__dirname, '..', 'narration-principles.md'),
+  'utf8'
+);
+
 // ─── DeckSpecification tool schema for structured output ────────────────────
 // This is a simplified JSON Schema representation of the DeckSpecification
 // used as a tool definition for Claude's structured output.
@@ -214,14 +220,7 @@ When items follow "{shortLabel}: {longDescription}" pattern and count > 5, use s
 When ≤5 items, use bullets with fontSize: 18 (3 items), 16 (4), 14 (5).
 
 ## Narration rules
-- Write for a human narrator speaking to an audience
-- Synthesize, don't read bullet points verbatim
-- Do NOT start with "In this slide" or "As you can see"
-- Target at least 30 seconds per content slide (~75+ words); 60-90 seconds for complex slides
-- For bullet/step/card slides: explain WHY the content matters before addressing items
-- Dollar amounts: remove commas ($17719 not $17,719)
-- Acronyms: phonetic spellings (Gap for GAAP, Fazz-bee for FASB, Cecil for CECL)
-- cashflow (one word), no quotes, last slide: (pause: 1) before thank-you
+${NARRATION_PRINCIPLES}
 
 ## Color palette (hex values for accent fields)
 blue=#1A4FE8, green=#2E7D32, gold=#C17D10, red=#B91C1C, teal=#0F766E`;
