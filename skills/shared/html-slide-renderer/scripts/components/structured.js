@@ -19,12 +19,11 @@ module.exports = function makeStructured(ctx) {
     const dim = opts.highlight?.length > 0 && !opts.highlight.includes(0) ? 'opacity:0.35;' : '';
 
     slide.add(`<div style="
-      display:grid; grid-template-columns:${px(0.07)}px 8px ${badgeS}px 8px 1fr;
+      display:grid; grid-template-columns:${px(compact ? 0.14 : 0.18)}px ${badgeS}px 8px 1fr;
       align-items:center;
       background:${C.white}; border-radius:5px;
       overflow:hidden; flex-shrink:0; min-height:${minH}px;${dim}
     ">
-      <div style="background:${C.blue};height:100%;border-radius:3px 0 0 3px;"></div>
       <div></div>
       <div style="width:${badgeS}px;height:${badgeS}px;background:${C.blue};border-radius:4px;display:flex;align-items:center;justify-content:center;">
         <span style="font-size:${pt(numPt)}px;font-weight:bold;color:${C.white};">${num}</span>
