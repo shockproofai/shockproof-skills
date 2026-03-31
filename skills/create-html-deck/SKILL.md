@@ -159,7 +159,7 @@ Generate a JSON file matching this structure. The full schema is in `references/
       "nextModuleNum": 2,
       "nextModuleTitle": "Accounts Receivable Analysis",
       "totalPages": 40,
-      "narration": "Thank you for completing Module 1. (pause: 1) Thank you."
+      "narration": "Thank you for completing Module 1.\n\n(pause: 1)\n\nThank you."
     }
   ]
 }
@@ -211,7 +211,8 @@ Every slide should have a `narration` string field. Narrations are read directly
 - Acronyms: Phonetic spellings (Gap for GAAP, Fazz-bee for FASB, Cecil for CECL)
 - `cashflow` (one word, always)
 - No quotes in narration
-- Last slide: `(pause: 1)` before thank-you
+- **Pause directives on their own line**: Write `(pause: N)` with `\n\n` before and after — never inline within a sentence. Example: `"Final thought.\n\n(pause: 1)\n\nThank you."`
+- Last slide: Must include `\n\n(pause: 1)\n\n` before the thank-you
 
 ### Pre-Finalisation Checklist
 
@@ -221,7 +222,8 @@ Before writing the JSON, scan every narration string for:
 - [ ] Acronyms from the phonetic table → replace with phonetic spellings
 - [ ] `cash flow` (two words) → replace with `cashflow`
 - [ ] Single or double quotes → remove or rephrase
-- [ ] Last slide ends with `(pause: 1)` before thank-you
+- [ ] `(pause: N)` directives inline → move to `\n\n(pause: N)\n\n` format
+- [ ] Last slide ends with `\n\n(pause: 1)\n\nThank you.`
 
 ## Narakeet Video
 
@@ -314,15 +316,44 @@ Do NOT use `cardGrid` when:
 
 Avoid repeating the same component layout on consecutive slides. Use at least 8 different component types across a module.
 
+## Automated Visual Check (visualCheck)
+
+The build pipeline includes an automated **visualCheck** phase that detects content overflow and text truncation, then auto-fixes affected slides.
+
+### How It Works
+
+1. The `renderHtmlToPng` cloud function evaluates overflow-detection JS on each slide after DOM layout, *before* taking the screenshot
+2. It returns per-slide `overflow` metadata alongside the PNGs:
+   - `contentClipped: boolean` — `.slide-content` children exceed the visible area
+   - `truncatedElements: string[]` — specific elements with `scrollHeight > clientHeight` (text cut off by `overflow: hidden`)
+3. `buildDeck` reads the overflow metadata and auto-applies fixes to the DeckSpecification:
+   - **cardGrid**: adds `compact: true` (14pt titles, 11pt descriptions, tighter padding)
+   - **cardHtml** (in rows): adds `compact: true`
+   - **bullets/checklist**: reduces `fontSize` by 2pt (min 9pt)
+   - **stepRow**: enables `compact: true`
+   - **styledTable**: reduces `rowH` by 0.07in (min 0.22in)
+4. Only affected slides are re-interpreted and re-rendered (one retry max)
+5. Remaining overflow warnings are reported in `result.overflowWarnings`
+
+### Controlling visualCheck
+
+```js
+// Enabled by default
+await buildDeck(spec, outputConfig);
+
+// Disable if needed
+await buildDeck(spec, outputConfig, { visualCheck: false });
+```
+
 ## QA After Build
 
 1. Build completes without errors
-2. Console output confirms correct slide count
-3. **Visual overflow check — mandatory.** After rendering, read every generated PNG using the Read tool and inspect each slide image:
+2. Console output confirms correct slide count and `visualCheck` results
+3. **Manual visual spot-check.** The automated visualCheck catches most overflow/truncation, but still read every generated PNG to verify:
    - Content must not touch or overlap the footer bar
    - No content should be cut off at the top or bottom
    - No slide should appear mostly empty when it should have content
-   - If overflow is detected: fix the DeckSpecification JSON (reduce `rowH`, remove a component, add `"compact": true`, or replace `stepRow` with `styledTable`), rebuild, and re-check
+   - If `overflowWarnings` are reported in the build result, those slides need manual attention
 4. Spot-check PDF: title, section divider, content, case study, closing
 5. Every slide in the DeckSpecification has a `narration` field
 6. Scan narration for TTS violations

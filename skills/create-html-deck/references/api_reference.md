@@ -156,7 +156,7 @@ Creates closing slide (special layout). Pass `nextModuleNum`/`nextModuleTitle` f
   "nextModuleNum": 2,
   "nextModuleTitle": "Accounts Receivable Analysis",
   "totalPages": 40,
-  "narration": "Thank you for completing Module 1. (pause: 1) Thank you."
+  "narration": "Thank you for completing Module 1.\n\n(pause: 1)\n\nThank you."
 }
 ```
 
