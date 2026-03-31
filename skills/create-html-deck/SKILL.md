@@ -165,6 +165,14 @@ Generate a JSON file matching this structure. The full schema is in `references/
 }
 ```
 
+## Content Design Principle — Always Steer Toward Titled Items
+
+**Before writing any component, ask: can each item be given a 2–5 word title/headline and a description sentence?** If yes, use `cardGrid` (4–8 items) or a `row` of `cardHtml` (2–3 items). This is the default visual treatment for enumerable content.
+
+- Concepts, risks, examples, warnings, case studies, best practices, red flags → `cardGrid` if each can be named
+- Only fall back to `bullets` when items genuinely share no individual title (e.g. a list of sub-points elaborating a single idea)
+- Only use `redFlagPairs` for pure short warning phrases that cannot be given distinct names
+
 ## Critical Rules
 
 1. **Read `references/api_reference.md` for the full JSON schema.** All slide types, component types, and options are documented there.
