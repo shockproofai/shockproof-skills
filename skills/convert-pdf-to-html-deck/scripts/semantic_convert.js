@@ -12,7 +12,7 @@ try {
   deckSpecificationSchema = pkg.deckSpecificationSchema;
 } catch {
   // Fallback: resolve from monorepo packages/deck-builder/dist
-  const distPath = path.join(__dirname, '../../../../packages/deck-builder/dist/index.js');
+  const distPath = path.join(__dirname, '../../../../../packages/deck-builder/dist/index.js');
   const pkg = require(distPath);
   buildDeck = pkg.buildDeck;
   deckSpecificationSchema = pkg.deckSpecificationSchema;
