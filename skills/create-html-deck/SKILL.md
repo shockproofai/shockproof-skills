@@ -286,28 +286,29 @@ The same JSON can also be submitted as a cloud agent job (`htmlDeckBuilder`) for
 
 | Content Type                        | Best Component                                |
 |-------------------------------------|-----------------------------------------------|
-| 4–8 parallel, equal-weight concepts (features, qualities, categories) each with title + description + icon | `cardGrid` |
+| 4–8 items that each have a title/headline AND a description (any topic — examples, warnings, concepts, risks, case studies) | `cardGrid` |
 | Introduction / overview (2–3 topics)| `row` with 2–3 `cardHtml` children             |
 | Numbered process / sequential steps | `stepRow` (max 5 alone, or 4 with callout; use `styledTable` if more) |
-| Bulleted knowledge points           | `bullets` (max 6–7 items)                    |
+| Bulleted knowledge points with NO natural title | `bullets` (max 6–7 items)         |
 | Checklist / requirements            | `checklist` (max 8 items)                    |
 | Data / metrics comparison           | `styledTable`                                |
 | Key statistics                      | `row` with 3 `cardHtml` (statCard style)     |
 | Contrasting approaches (do/don't)   | `comparison`                                 |
 | Important tip or principle          | `calloutBox`                                 |
-| Warning signs / red flags           | `redFlagPairs` (exactly 6 pairs)             |
+| Warning signs / red flags — pure short phrases, no titles | `redFlagPairs` (exactly 6 pairs) |
 | Two-topic deep dive                 | `row` with 2 `cardHtml` + `calloutBox`       |
 
-### When to use `cardGrid` vs. `bullets` / `styledTable`
+### Prefer `cardGrid` whenever items have titles
 
-Use `cardGrid` when ALL of these are true:
-- 4–8 items (hard min/max)
-- Each item is a **distinct, equal-weight concept** (not sub-points of one idea)
-- Each has a natural 1–3 word title AND a separate description sentence
-- A meaningful Lucide icon can represent each concept
+**If the content has 4–8 items and each item has a natural headline or lead phrase, always use `cardGrid`** — even if the items are warnings, risks, case studies, or red flags. The rule of thumb: if you could write a 2–5 word title for each item, it should be a card.
 
-Do NOT use `cardGrid` when:
-- Items are sub-bullets elaborating on a single topic → `bullets`
+**`bullets` is only correct when items have no natural title** — they are sentence-length facts or sub-points that don't decompose into a headline + body.
+
+**`redFlagPairs` is only correct when** items are pure, short, equal-weight warning phrases that can't be given distinct titles. If you can name them (e.g. "Lehman Brothers", "Washington Mutual"), they are cards, not flag pairs.
+
+### When NOT to use `cardGrid`
+
+- Items are sub-bullets elaborating on a single topic (no individual titles) → `bullets`
 - Items are definition-style "Term: Definition" without distinct conceptual identity → `styledTable`
 - Items have a natural ordering/sequence → `stepRow`
 - Fewer than 4 or more than 8 items
