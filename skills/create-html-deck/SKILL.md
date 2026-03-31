@@ -231,6 +231,33 @@ When narration is present, the build pipeline auto-generates:
 
 Video generation uses the Narakeet API and requires `NARAKEET_API_KEY`.
 
+### Submitting to Narakeet
+
+After the deck build completes (PNGs + `narakeet.zip` exist in the output directory), use the shared renderer's `submitToNarakeet()` method to upload the zip, poll for completion, and download the MP4:
+
+```js
+const path = require('path');
+const RENDERER_ROOT = path.join(__dirname, '../../shared/html-slide-renderer');
+const tpl = require(path.join(RENDERER_ROOT, 'scripts/sai_html_template.js'))({
+  seriesTitle: 'Your Series Title', totalModules: 1,
+});
+const pres = tpl.createPresentation();
+const videoPath = await pres.submitToNarakeet(outputDir, {
+  videoFilename: 'My_Module.mp4',
+});
+console.log(`Video saved: ${videoPath}`);
+```
+
+**How it works internally:**
+1. Reads `NARAKEET_API_KEY` from env (falls back to `gcloud secrets` CLI)
+2. Requests an upload token from `https://api.narakeet.com/video/upload-request/zip`
+3. Uploads `narakeet.zip` to the pre-signed URL
+4. Requests a video build via `POST /video/build`
+5. Polls the status URL until completion (~2–5 min for 20 slides)
+6. Downloads the MP4 to `outputDir/{videoFilename}`
+
+**Key file:** `.claude/skills/shockproof-skills/shared/html-slide-renderer/scripts/presentation.js` — the `submitToNarakeet()` method (line ~218).
+
 ## Building the Deck
 
 After generating the DeckSpecification JSON, run it through `@shockproof/deck-builder`:
