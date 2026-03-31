@@ -326,12 +326,14 @@ The build pipeline includes an automated **visualCheck** phase that detects cont
 2. It returns per-slide `overflow` metadata alongside the PNGs:
    - `contentClipped: boolean` — `.slide-content` children exceed the visible area
    - `truncatedElements: string[]` — specific elements with `scrollHeight > clientHeight` (text cut off by `overflow: hidden`)
+   - `titleTruncated: boolean` — the title element's `scrollHeight > clientHeight` (title text cut off by `-webkit-line-clamp`)
 3. `buildDeck` reads the overflow metadata and auto-applies fixes to the DeckSpecification:
    - **cardGrid**: adds `compact: true` (14pt titles, 11pt descriptions, tighter padding)
    - **cardHtml** (in rows): adds `compact: true`
    - **bullets/checklist**: reduces `fontSize` by 2pt (min 9pt)
    - **stepRow**: enables `compact: true`
    - **styledTable**: reduces `rowH` by 0.07in (min 0.22in)
+   - **Title wrap (orphan word)**: if the title wraps and only **1 orphan word** sits on the second line, `titleFontSize` is reduced to fit on one line (minimum 18pt). 2+ words on the second line is acceptable and does not trigger downsizing. The fix applies **at most once** per slide — if a `titleFontSize` override already exists, no further downsizing occurs. If a previous downsize caused title truncation (detected via `titleTruncated` in the overflow metadata), the override is **reverted** to restore the natural title size.
 4. Only affected slides are re-interpreted and re-rendered (one retry max)
 5. Remaining overflow warnings are reported in `result.overflowWarnings`
 
