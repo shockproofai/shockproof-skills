@@ -212,6 +212,11 @@ Use the generate_deck_specification tool to output a complete DeckSpecification 
 - References/resources → type: "references"
 - All other content → type: "content" with appropriate components
 
+## Design variety
+Aim for a natural mix of component types across the deck — avoid defaulting every content slide to bullets.
+When styledTable, cardGrid, stepRow, or comparison genuinely fits the data, prefer those over bullets.
+Repetition is fine when the content truly calls for the same format (e.g. two back-to-back question tables).
+
 ## Content component selection (evaluate in this order — first match wins)
 1. Numbered/sequential steps → stepRow (one per step, max 5)
 2. Side-by-side comparison (pros/cons, old/new) → comparison
@@ -221,7 +226,7 @@ Use the generate_deck_specification tool to output a complete DeckSpecification 
 6. 4–8 PARALLEL concepts where each item is an EQUAL-WEIGHT standalone idea (e.g. personal qualities, product features, service categories, team roles) AND each item has a short title + 1–2 sentence description that can stand alone → cardGrid
 7. 2–3 topics side by side → row with cardHtml children
 8. Tabular data with ≥3 columns → styledTable
-9. 4–8 items with "{shortLabel}: {longDescription}" pattern → styledTable (2-col)
+9. 5–8 items with "{shortLabel}: {longDescription}" pattern → styledTable (2-col)
 10. ≤5 supporting points under a heading → bullets
 11. Stat/metric highlights → row with cardHtml (statCard style)
 12. Everything else → bullets or rawHtml
