@@ -332,7 +332,8 @@ The build pipeline includes an automated **visualCheck** phase that detects cont
    - **cardHtml** (in rows): adds `compact: true`
    - **bullets/checklist**: reduces `fontSize` by 2pt (min 9pt)
    - **stepRow**: enables `compact: true`
-   - **styledTable**: reduces `rowH` by 0.07in (min 0.22in)
+   - **styledTable** (overflow): reduces `cellPadding` one step (`8px 10px` → `6px 8px` → `4px 6px`) before shrinking `rowH` by 0.07in (min 0.22in)
+   - **styledTable** (sparse): increases `cellPadding` one step (`8px 10px` → `10px 14px` → `12px 16px`) to fill available space
    - **Title wrap (orphan word)**: if the title wraps and only **1 orphan word** sits on the second line, `titleFontSize` is reduced to fit on one line (minimum 18pt). 2+ words on the second line is acceptable and does not trigger downsizing. The fix applies **at most once** per slide — if a `titleFontSize` override already exists, no further downsizing occurs. If a previous downsize caused title truncation (detected via `titleTruncated` in the overflow metadata), the override is **reverted** to restore the natural title size.
 4. Only affected slides are re-interpreted and re-rendered (one retry max)
 5. Remaining overflow warnings are reported in `result.overflowWarnings`

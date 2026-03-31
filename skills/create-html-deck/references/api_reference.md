@@ -263,12 +263,18 @@ Blue-header table with alternating rows. Row 0 = headers.
 }
 ```
 
-Optional `opts`: `{ "fontSize": 11, "rowH": 0.35, "colWidths": [2, 1, 1] }`
+Optional `opts`: `{ "fontSize": 11, "rowH": 0.35, "colWidths": [2, 1, 1], "cellPadding": "8px 10px" }`
 
 **`rowH` is in INCHES (multiplied by SCALE=128 internally).** Never pass pixel values.
 - Default: `0.35` inches (≈45px) — good for 4–5 rows
 - Compact (6–7 rows): `0.28` inches (≈36px)
 - Extra-compact (8+ rows): `0.22` inches (≈28px)
+
+**`cellPadding`** is a CSS padding shorthand applied to every cell.
+- Default: `"8px 10px"` — standard breathing room
+- Compact (crowded slide): `"6px 8px"` or `"4px 6px"`
+- Expanded (sparse slide): `"10px 14px"` or `"12px 16px"`
+- `visualCheck` adjusts this automatically before touching `rowH`
 
 ### redFlagPairs
 
