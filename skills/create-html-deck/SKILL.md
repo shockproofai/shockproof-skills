@@ -177,7 +177,7 @@ Generate a JSON file matching this structure. The full schema is in `references/
 
 1. **Read `references/api_reference.md` for the full JSON schema.** All slide types, component types, and options are documented there.
 
-2. **Content auto-fills the safe zone.** The flex layout fills the space between header and footer. Content is vertically centered; sparse slides have balanced whitespace above and below.
+2. **Content is vertically centered.** Components stack at their natural height between header and footer. The flex layout vertically centers them, producing balanced whitespace above and below. Components must NOT use `flex:1` in the column direction — that would stretch them to fill the area and defeat centering.
 
 3. **Page numbers must be sequential.** Track `pageNum` for every slide. The title slide is page 1.
 
