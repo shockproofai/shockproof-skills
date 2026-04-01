@@ -191,11 +191,13 @@ Generate a JSON file matching this structure. The full schema is in `references/
 
 8. **Bold-prefix format.** Use `"Key Term: rest of description"` — the colon triggers auto bold formatting.
 
-9. **`rowH` in `styledTable` opts is in INCHES, not pixels.** It is multiplied by SCALE=128 internally.
-    - Default (no option): `0.35` in ≈ 45px — good for ≤5 data rows
+9. **`rowH` in `styledTable` opts is in INCHES, not pixels.** It is multiplied by SCALE=128 internally. `rowH` is the **primary lever** for controlling whitespace within table rows — increase it for spacious rows, decrease for compact rows. `cellPadding` is secondary and only effective when `rowH` is large enough to accommodate it.
+    - Default (no option): `0.35` in ≈ 45px — baseline for most tables
+    - Spacious (≤4 data rows): `0.45`–`0.55` in — use when few rows leave visible empty space below
     - Compact (6–7 rows): `0.28` in ≈ 36px
     - Extra-compact (8+ rows): `0.22` in ≈ 28px
     - **Never pass pixel values** like `"rowH": 36` — that would be 36 × 128 = 4,608px per row.
+    - **Rule of thumb**: if a table has ≤5 data rows and no other large components on the slide, increase `rowH` above the default to fill available space.
 
 10. **`stepRow` height budget.** Each step row is ~55px. Budget for the content area (~560px after chrome):
     - 5 step rows alone: ~275px OK
@@ -341,8 +343,8 @@ The build pipeline includes an automated **visualCheck** phase that detects cont
    - **cardHtml** (in rows): adds `compact: true`
    - **bullets/checklist**: reduces `fontSize` by 2pt (min 9pt)
    - **stepRow**: enables `compact: true`
-   - **styledTable** (overflow): reduces `cellPadding` one step (`8px 10px` → `6px 8px` → `4px 6px`) before shrinking `rowH` by 0.07in (min 0.22in)
-   - **styledTable** (sparse): increases `cellPadding` one step (`8px 10px` → `10px 14px` → `12px 16px`) to fill available space
+   - **styledTable** (overflow): shrinks `rowH` by 0.07in (min 0.22in) first; only compacts `cellPadding` (`8px 10px` → `6px 8px` → `4px 6px`) when `rowH` is already at minimum
+   - **styledTable** (sparse): increases `rowH` by 0.05in (max 0.55in) first; only expands `cellPadding` (`8px 10px` → `10px 14px` → `12px 16px`) when `rowH` is already at maximum
    - **Title wrap (orphan word)**: if the title wraps and only **1 orphan word** sits on the second line, `titleFontSize` is reduced to fit on one line (minimum 18pt). 2+ words on the second line is acceptable and does not trigger downsizing. The fix applies **at most once** per slide — if a `titleFontSize` override already exists, no further downsizing occurs. If a previous downsize caused title truncation (detected via `titleTruncated` in the overflow metadata), the override is **reverted** to restore the natural title size.
 4. Only affected slides are re-interpreted and re-rendered (one retry max)
 5. Remaining overflow warnings are reported in `result.overflowWarnings`
