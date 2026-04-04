@@ -64,6 +64,8 @@ Confirm before generating:
 
 Generate a JSON file matching this structure. The full schema is in `references/api_reference.md`.
 
+> **Server-side equivalent:** The `courseMapDeckFillerChain` agent job generates the same DeckSpecification JSON using the `deckSpecGenerator` agent instructions (`agents/courseassistant/deckSpecGenerator/instructions.md`) and a shared schema reference fragment (`agents/courseassistant/shared/deckspec-schema-reference.md`). Both paths feed into the same `@shockproof/deck-builder` pipeline.
+
 ```json
 {
   "config": {
