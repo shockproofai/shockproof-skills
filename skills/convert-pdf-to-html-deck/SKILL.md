@@ -123,8 +123,7 @@ No CLI flag is needed — detection is automatic. If any page lacks the pattern,
 | File | Description |
 |------|-------------|
 | `slide_001.png` … | Slide images (lossless: from PDF; semantic: re-rendered HTML) |
-| `deck_specification.json` | DeckSpecification with narration in each slide's `narration` field |
+| `deck_specification.json` | *(Semantic only)* DeckSpecification JSON from Claude (structured output) |
 | `narakeet-script.md` | Narakeet video script |
 | `narakeet.zip` | Compressed archive for Narakeet upload |
-| `deck_specification.json` | *(Semantic only)* DeckSpecification JSON from Claude (structured output) |
 | `output.mp4` | Final narrated video |

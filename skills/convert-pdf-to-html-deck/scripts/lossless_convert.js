@@ -178,14 +178,8 @@ async function losslessConvert(pdfPath, outputDir, opts = {}) {
     timing.narration = t() - t0;
   }
 
-  // 3. Write narration JSON
+  // 3. Write Narakeet script
   t0 = t();
-  const narrationObj = {};
-  narrations.forEach((n, i) => { narrationObj[String(i + 1)] = n; });
-  fs.writeFileSync(path.join(outputDir, 'slide-narration.json'), JSON.stringify(narrationObj, null, 2));
-  console.log(`✓ Narration JSON: ${path.join(outputDir, 'slide-narration.json')}`);
-
-  // 4. Write Narakeet script
   writeNarakeetScript(outputDir, pngPaths, narrations, opts);
 
   // 5. Build ZIP
