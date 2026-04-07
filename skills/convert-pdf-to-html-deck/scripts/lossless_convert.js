@@ -1,7 +1,7 @@
 'use strict';
 const fs   = require('fs');
 const path = require('path');
-const { extractPNGs, extractPageText } = require('./extract_pages');
+const { extractPNGs, extractPageText, parseSpeakerNotes } = require('./extract_pages');
 const { resolveApiKey } = require('./resolve_api_key');
 
 // Narration principles live in the skill root (copy of agents/courseassistant/shared/narration-principles.md)
@@ -165,11 +165,18 @@ async function losslessConvert(pdfPath, outputDir, opts = {}) {
   // Align text array length to png count
   while (pageTexts.length < pngPaths.length) pageTexts.push('');
 
-  // 2. Generate narration
-  const apiKey = await resolveApiKey('ANTHROPIC_API_KEY');
-  t0 = t();
-  const narrations = await generateNarration(pageTexts.slice(0, pngPaths.length), apiKey);
-  timing.narration = t() - t0;
+  // 2. Generate narration (or use embedded speaker notes)
+  const speakerNotes = parseSpeakerNotes(pageTexts.slice(0, pngPaths.length));
+  let narrations;
+  if (speakerNotes) {
+    narrations = speakerNotes;
+    timing.narration = 0;
+  } else {
+    const apiKey = await resolveApiKey('ANTHROPIC_API_KEY');
+    t0 = t();
+    narrations = await generateNarration(pageTexts.slice(0, pngPaths.length), apiKey);
+    timing.narration = t() - t0;
+  }
 
   // 3. Write narration JSON
   t0 = t();

@@ -103,6 +103,21 @@ Resolved via (in order): env var → `CLAUDE_CODE_OAUTH_TOKEN` (Claude Code sess
 
 Note: `ANTHROPIC_API_KEY` must be set — all steps use `claude-sonnet-4-6`. The `CLAUDE_CODE_OAUTH_TOKEN` fallback only guarantees access to Haiku and will cause 400 errors for Sonnet calls.
 
+## Embedded speaker notes
+
+If every page of the input PDF contains text matching the pattern:
+
+```
+Slide N of M SPEAKER NOTES [narration text]
+```
+
+The skill automatically detects this and uses the embedded notes as narration instead of generating narration via Claude API.
+
+- **Lossless mode**: Skips the Claude narration API call entirely (zero API cost for narration)
+- **Semantic mode**: Claude still analyzes the PDF for slide structure, but narration fields are populated from the embedded notes verbatim
+
+No CLI flag is needed — detection is automatic. If any page lacks the pattern, the skill falls back to normal AI narration generation for all slides.
+
 ## Output files
 
 | File | Description |

@@ -114,4 +114,22 @@ async function extractPageText(pdfPath) {
   return pages;
 }
 
-module.exports = { extractPNGs, extractPageText };
+/**
+ * Detect and extract embedded speaker notes from per-page text.
+ * Returns an array of narration strings if ALL pages match the
+ * "Slide N of M SPEAKER NOTES ..." pattern, or null otherwise.
+ */
+function parseSpeakerNotes(pageTexts) {
+  const NOTE_RE = /^Slide\s+\d+\s+of\s+\d+\s+SPEAKER\s+NOTES\s+(.+)$/s;
+  const narrations = [];
+  for (const text of pageTexts) {
+    const match = text.match(NOTE_RE);
+    if (!match || !match[1].trim()) return null;
+    narrations.push(match[1].trim());
+  }
+  if (narrations.length === 0) return null;
+  console.log(`  ✓ Detected embedded speaker notes on all ${narrations.length} pages — skipping AI narration`);
+  return narrations;
+}
+
+module.exports = { extractPNGs, extractPageText, parseSpeakerNotes };

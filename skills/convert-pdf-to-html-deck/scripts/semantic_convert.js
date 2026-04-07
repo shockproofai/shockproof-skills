@@ -279,6 +279,18 @@ Common icons by domain:
 - Awards: trophy, medal, award, badge-check, star, crown
 - Alerts: alert-circle, alert-triangle, info, bell, check-circle`;
 
+  // If speaker notes are provided, append them to the prompt
+  let finalPrompt = prompt;
+  if (opts.speakerNotes) {
+    const notesList = opts.speakerNotes
+      .map((n, i) => `Slide ${i + 1}: "${n}"`)
+      .join('\n');
+    finalPrompt += `\n\n## Pre-written speaker notes — use VERBATIM
+The PDF contains embedded speaker notes. For each slide's "narration" field, copy the corresponding note below EXACTLY as written. Do NOT rephrase, summarize, or regenerate narration.
+
+${notesList}`;
+  }
+
   const response = await client.messages.create({
     model: opts.model || 'claude-sonnet-4-6',
     max_tokens: 16384,
@@ -291,7 +303,7 @@ Common icons by domain:
           type: 'document',
           source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
         },
-        { type: 'text', text: prompt },
+        { type: 'text', text: finalPrompt },
       ],
     }],
   });
@@ -307,6 +319,17 @@ Common icons by domain:
   // Validate against Zod schema
   const parsed = deckSpecificationSchema.parse(spec);
   console.log(`✓ DeckSpecification generated: ${parsed.slides.length} slides`);
+
+  // Safety net: overwrite narration fields with embedded speaker notes verbatim
+  if (opts.speakerNotes && parsed.slides) {
+    const notes = opts.speakerNotes;
+    parsed.slides.forEach((slide, i) => {
+      if (i < notes.length) {
+        slide.narration = notes[i];
+      }
+    });
+    console.log(`  ✓ Overwrote narration fields with ${Math.min(notes.length, parsed.slides.length)} embedded speaker notes`);
+  }
 
   // Write the spec to disk for reference
   const specPath = path.join(outputDir, 'deck_specification.json');
@@ -482,6 +505,14 @@ async function semanticConvert(pdfPath, outputDir, opts = {}) {
   const timing = {};
   const t = () => Date.now();
   let t0;
+
+  // 0. Check for embedded speaker notes
+  const { extractPageText, parseSpeakerNotes } = require('./extract_pages');
+  const pageTexts = await extractPageText(pdfPath);
+  const speakerNotes = parseSpeakerNotes(pageTexts);
+  if (speakerNotes) {
+    opts = { ...opts, speakerNotes };
+  }
 
   // 1. Generate DeckSpecification via Claude structured output
   t0 = t();

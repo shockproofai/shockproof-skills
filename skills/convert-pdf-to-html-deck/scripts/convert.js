@@ -94,7 +94,7 @@ const outputDir   = opts.output ||
       ];
       if (opts.lossless) {
         rows.push(['PDF rasterisation',     fmt(T.rasterisation || 0)]);
-        rows.push(['Narration (Claude)',     fmt(T.narration     || 0)]);
+        rows.push([T.narration === 0 ? 'Narration (speaker notes)' : 'Narration (Claude)', fmt(T.narration || 0)]);
         rows.push(['ZIP build',              fmt(T.zip           || 0)]);
       } else {
         rows.push(['PDF analysis (Claude)',  fmt(T.claudeAnalysis || 0)]);
