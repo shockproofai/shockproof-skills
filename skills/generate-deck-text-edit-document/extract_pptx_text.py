@@ -9,7 +9,26 @@ Produces two JSON files:
 import json
 import sys
 import os
+import subprocess
 from datetime import datetime, timezone
+
+# ── Auto-install python-pptx into a local vendor/ directory ──────────────
+SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
+VENDOR_DIR = os.path.join(SKILL_DIR, "vendor")
+
+if not os.path.isdir(VENDOR_DIR):
+    print("First run: installing python-pptx into vendor/ …", file=sys.stderr)
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install",
+         "--target", VENDOR_DIR, "--quiet", "python-pptx"],
+    )
+    print("Done.", file=sys.stderr)
+
+# Prepend vendor/ so imports resolve from there
+if VENDOR_DIR not in sys.path:
+    sys.path.insert(0, VENDOR_DIR)
+# ─────────────────────────────────────────────────────────────────────────
+
 from pptx import Presentation
 from pptx.util import Emu
 

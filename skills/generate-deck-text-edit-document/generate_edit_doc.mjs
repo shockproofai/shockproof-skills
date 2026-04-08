@@ -7,23 +7,34 @@
 
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { createRequire } from "module";
+import { execSync } from "child_process";
 
-// Resolve 'docx' from the global npm prefix so the script works regardless
-// of where it lives on disk.
-const globalRequire = createRequire(
-  path.join(
-    (await import("child_process"))
-      .execSync("npm root -g", { encoding: "utf-8" }).trim(),
-    "_virtual.cjs"
-  )
-);
+// ── Auto-install docx into a local node_modules/ ───────────────────────
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const localPkg = path.join(__dirname, "node_modules", "docx");
+
+if (!fs.existsSync(localPkg)) {
+  console.error("First run: installing docx into skill node_modules/ …");
+  // Ensure the directory containing the running Node binary is on PATH so
+  // that npm (a shell script invoking `node`) can find it, even in
+  // non-interactive shells where PATH may be minimal.
+  const nodeDir = path.dirname(process.execPath);
+  const env = { ...process.env, PATH: `${nodeDir}:${process.env.PATH || ""}` };
+  execSync("npm install --save docx", { cwd: __dirname, stdio: "inherit", env });
+  console.error("Done.");
+}
+
+const localRequire = createRequire(path.join(__dirname, "_virtual.cjs"));
+// ────────────────────────────────────────────────────────────────────────
+
 const {
   Document, Packer, Paragraph, TextRun, Header, Footer,
   AlignmentType, HeadingLevel, PageBreak, PageNumber,
   TabStopType, TabStopPosition, LevelFormat,
   Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle
-} = globalRequire("docx");
+} = localRequire("docx");
 
 const data = JSON.parse(fs.readFileSync(process.argv[2], "utf-8"));
 const outputPath = process.argv[3] ||

@@ -13,9 +13,24 @@ Both files are placed in the same directory as the input PPTX.
 
 ---
 
+## Dependencies
+
+Both scripts **auto-install** their dependencies on first run — no manual `pip install` or `npm install` needed.
+
+| Script | Dependency | Auto-installed to |
+|--------|-----------|-------------------|
+| `extract_pptx_text.py` | `python-pptx` | `vendor/` (via `pip install --target`) |
+| `generate_edit_doc.mjs` | `docx` (npm) | `node_modules/` (via `npm install --save`) |
+
+The `vendor/`, `node_modules/`, `package.json`, and `package-lock.json` are gitignored — each teammate's first run installs fresh platform-appropriate binaries.
+
+**Prerequisites**: Python 3 and Node.js must be installed (pip and npm come bundled with them).
+
+---
+
 ## Step 1: Extract text from the PPTX
 
-Write and run a Python script using `python-pptx` that:
+Run the bundled Python script `extract_pptx_text.py` which uses `python-pptx` to:
 
 1. Opens the PPTX file
 2. For each slide, classifies shapes by placeholder type:
