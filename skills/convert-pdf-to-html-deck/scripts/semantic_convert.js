@@ -86,7 +86,7 @@ const DECK_SPEC_TOOL = {
                     type: 'string',
                     enum: ['card', 'statCard', 'calloutBox', 'bullets', 'checklist',
                            'stepRow', 'comparison', 'styledTable', 'plainTable',
-                           'redFlagPairs', 'rawHtml', 'cardGrid', 'row'],
+                           'pieChart', 'redFlagPairs', 'rawHtml', 'cardGrid', 'row'],
                   },
                   // Component-specific fields (all optional, depends on type)
                   accent: { type: 'string' },
@@ -103,6 +103,18 @@ const DECK_SPEC_TOOL = {
                   rightBody: { type: 'string' },
                   rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
                   flags: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
+                  slices: {
+                    type: 'array',
+                    description: 'Pie chart slices (label + numeric value). Values auto-normalize to 100%.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        label: { type: 'string' },
+                        value: { type: 'number' },
+                      },
+                      required: ['label', 'value'],
+                    },
+                  },
                   html: { type: 'string' },
                   cards: {
                     type: 'array',
@@ -214,23 +226,24 @@ Use the generate_deck_specification tool to output a complete DeckSpecification 
 
 ## Design variety
 Aim for a natural mix of component types across the deck — avoid defaulting every content slide to bullets.
-When styledTable, plainTable, cardGrid, stepRow, or comparison genuinely fits the data, prefer those over bullets.
+When styledTable, plainTable, pieChart, cardGrid, stepRow, or comparison genuinely fits the data, prefer those over bullets.
 Repetition is fine when the content truly calls for the same format (e.g. two back-to-back question tables).
 
 ## Content component selection (evaluate in this order — first match wins)
 1. Numbered/sequential steps → stepRow (one per step, max 5)
 2. Side-by-side comparison (pros/cons, old/new) → comparison
-3. Warning sign pairs → redFlagPairs (exactly 6 pairs)
-4. Single tip, principle, or callout → calloutBox
-5. Checklist / requirements (pass/fail items) → checklist
-6. 4–8 PARALLEL concepts where each item is an EQUAL-WEIGHT standalone idea (e.g. personal qualities, product features, service categories, team roles) AND each item has a short title + 1–2 sentence description that can stand alone → cardGrid
-7. 2–3 topics side by side → row with cardHtml children
-8. Borderless 2-column list (e.g. agenda, TOC, numbered topic list without grid lines) → plainTable (2-col, no header row)
-9. Tabular data with ≥3 columns → styledTable
-10. 5–8 items with "{shortLabel}: {longDescription}" pattern → styledTable (2-col)
-11. ≤5 supporting points under a heading → bullets
-12. Stat/metric highlights → row with cardHtml (statCard style)
-13. Everything else → bullets or rawHtml
+3. Pie chart / donut chart / circular allocation chart → pieChart (extract slice labels + values; include any adjacent bullet points in the bullets array)
+4. Warning sign pairs → redFlagPairs (exactly 6 pairs)
+5. Single tip, principle, or callout → calloutBox
+6. Checklist / requirements (pass/fail items) → checklist
+7. 4–8 PARALLEL concepts where each item is an EQUAL-WEIGHT standalone idea (e.g. personal qualities, product features, service categories, team roles) AND each item has a short title + 1–2 sentence description that can stand alone → cardGrid
+8. 2–3 topics side by side → row with cardHtml children
+9. Borderless 2-column list (e.g. agenda, TOC, numbered topic list without grid lines) → plainTable (2-col, no header row)
+10. Tabular data with ≥3 columns → styledTable
+11. 5–8 items with "{shortLabel}: {longDescription}" pattern → styledTable (2-col)
+12. ≤5 supporting points under a heading → bullets
+13. Stat/metric highlights → row with cardHtml (statCard style)
+14. Everything else → bullets or rawHtml
 
 ### cardGrid vs. bullets/styledTable decision
 Use cardGrid when ALL of these are true:
@@ -256,6 +269,14 @@ Use plainTable for 2-column lists that appear borderless and headerless in the s
 - Rows are separated by a subtle divider line
 - Set colWidths proportional to content: e.g. [1, 4] for number + topic
 - Set rowH to fill: 0.42 for ≤6 rows, 0.36 for 7-8, 0.30 for 9-10, 0.26 for 11+
+
+### pieChart (pie/donut chart with optional bullets)
+Use pieChart when the source slide contains a circular/pie chart showing proportional allocation.
+- Extract each slice label and its percentage/value into the slices array
+- If there are bullet points alongside the chart, include them in the bullets array
+- Values are auto-normalized (they don't need to sum to 100)
+- Max 10 slices; if more than 10 in the source, group the smallest into "Other"
+- Example: { "type": "pieChart", "slices": [{"label":"CRE","value":30},{"label":"C&I","value":25}], "bullets": ["CRE concentration >300%..."] }
 
 ### styledTable sizing
 When items follow "{shortLabel}: {longDescription}" pattern and count > 5, use styledTable:
@@ -377,6 +398,7 @@ Downsize fix strategies (overflow):
 - cardGrid: add "compact": true in opts
 - bullets: add "fontSize": 10 in opts
 - styledTable / plainTable: reduce rowH (e.g. 0.35 → 0.22) in opts
+- pieChart: add "compact": true in opts
 
 Column width fix (uneven whitespace / wrapping in tables):
 - Add colWidths to opts using fr values proportional to content: [1, 3], [1, 2, 2], etc.
@@ -481,7 +503,7 @@ async function visualCheckAndFix(outputDir, spec, opts, apiKey) {
       } else if (comp.type === 'styledTable' || comp.type === 'plainTable') {
         const currentRowH = comp.opts?.rowH || 0.35;
         comp.opts = { ...(comp.opts || {}), rowH: Math.max(0.22, currentRowH - 0.06) };
-      } else if (comp.type === 'cardGrid') {
+      } else if (comp.type === 'cardGrid' || comp.type === 'pieChart') {
         comp.opts = { ...(comp.opts || {}), compact: true };
       } else if (comp.type === 'row' && comp.children) {
         for (const child of comp.children) {
