@@ -36,5 +36,8 @@
   "bugs": {
     "url": "https://github.com/shockproofai/shockproof-skills/issues"
   },
-  "homepage": "https://github.com/shockproofai/shockproof-skills#readme"
+  "homepage": "https://github.com/shockproofai/shockproof-skills#readme",
+  "dependencies": {
+    "pdfjs-dist": "^5.6.205"
+  }
 }
