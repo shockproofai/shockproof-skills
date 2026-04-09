@@ -86,7 +86,8 @@ const DECK_SPEC_TOOL = {
                     type: 'string',
                     enum: ['card', 'statCard', 'calloutBox', 'bullets', 'checklist',
                            'stepRow', 'comparison', 'styledTable', 'plainTable',
-                           'pieChart', 'redFlagPairs', 'rawHtml', 'cardGrid', 'row'],
+                           'pieChart', 'barChart', 'lineChart',
+                           'redFlagPairs', 'rawHtml', 'cardGrid', 'row'],
                   },
                   // Component-specific fields (all optional, depends on type)
                   accent: { type: 'string' },
@@ -115,6 +116,37 @@ const DECK_SPEC_TOOL = {
                       required: ['label', 'value'],
                     },
                   },
+                  bars: {
+                    type: 'array',
+                    description: 'Bar chart bars (label + numeric value).',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        label: { type: 'string' },
+                        value: { type: 'number' },
+                      },
+                      required: ['label', 'value'],
+                    },
+                  },
+                  xLabels: {
+                    type: 'array',
+                    description: 'X-axis labels for line chart.',
+                    items: { type: 'string' },
+                  },
+                  series: {
+                    type: 'array',
+                    description: 'Line chart data series.',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        label: { type: 'string' },
+                        values: { type: 'array', items: { type: 'number' } },
+                        color: { type: 'string', description: 'Optional hex color override' },
+                      },
+                      required: ['label', 'values'],
+                    },
+                  },
+                  yLabel: { type: 'string', description: 'Optional Y-axis label for bar/line charts' },
                   html: { type: 'string' },
                   cards: {
                     type: 'array',
@@ -232,7 +264,11 @@ Repetition is fine when the content truly calls for the same format (e.g. two ba
 ## Content component selection (evaluate in this order — first match wins)
 1. Numbered/sequential steps → stepRow (one per step, max 5)
 2. Side-by-side comparison (pros/cons, old/new) → comparison
-3. Pie chart / donut chart / circular allocation chart → pieChart (extract slice labels + values; include any adjacent bullet points in the bullets array)
+3. Data visualization chart with adjacent bullet points:
+   - Pie/donut chart → pieChart (extract slice labels + values)
+   - Vertical bar chart → barChart (extract bar labels + values)
+   - Line chart / trend chart → lineChart (extract x-axis labels + one or more data series with values)
+   Include any adjacent bullet points in the bullets array. Include yLabel if the Y-axis has a label.
 4. Warning sign pairs → redFlagPairs (exactly 6 pairs)
 5. Single tip, principle, or callout → calloutBox
 6. Checklist / requirements (pass/fail items) → checklist
@@ -277,6 +313,21 @@ Use pieChart when the source slide contains a circular/pie chart showing proport
 - Values are auto-normalized (they don't need to sum to 100)
 - Max 10 slices; if more than 10 in the source, group the smallest into "Other"
 - Example: { "type": "pieChart", "slices": [{"label":"CRE","value":30},{"label":"C&I","value":25}], "bullets": ["CRE concentration >300%..."] }
+
+### barChart (vertical bar chart with optional bullets)
+Use barChart when the source slide contains a vertical bar chart.
+- Extract each bar's label and numeric value into the bars array
+- Include yLabel if the Y-axis has a visible label
+- If there are bullet points alongside the chart, include them in the bullets array
+- Example: { "type": "barChart", "bars": [{"label":"Base Case","value":0.3},{"label":"Mild Recession","value":1.2}], "bullets": ["Scenario design: Align with CCAR..."] }
+
+### lineChart (line/trend chart with optional bullets)
+Use lineChart when the source slide contains a line chart or trend chart.
+- Extract x-axis labels into xLabels (e.g. ["Year 1","Year 2","Year 3"])
+- Extract each line as a series with label and values array (one value per x-axis label)
+- Include yLabel if the Y-axis has a visible label
+- If there are bullet points alongside the chart, include them in the bullets array
+- Example: { "type": "lineChart", "xLabels": ["Year 1","Year 2","Year 3"], "series": [{"label":"Rising Rates","values":[3.5,3.7,3.6]},{"label":"Falling Rates","values":[3.5,3.2,2.9]}], "bullets": ["Duration mismatch..."] }
 
 ### styledTable sizing
 When items follow "{shortLabel}: {longDescription}" pattern and count > 5, use styledTable:
@@ -398,7 +449,7 @@ Downsize fix strategies (overflow):
 - cardGrid: add "compact": true in opts
 - bullets: add "fontSize": 10 in opts
 - styledTable / plainTable: reduce rowH (e.g. 0.35 → 0.22) in opts
-- pieChart: add "compact": true in opts
+- pieChart / barChart / lineChart: add "compact": true in opts
 
 Column width fix (uneven whitespace / wrapping in tables):
 - Add colWidths to opts using fr values proportional to content: [1, 3], [1, 2, 2], etc.
@@ -503,7 +554,7 @@ async function visualCheckAndFix(outputDir, spec, opts, apiKey) {
       } else if (comp.type === 'styledTable' || comp.type === 'plainTable') {
         const currentRowH = comp.opts?.rowH || 0.35;
         comp.opts = { ...(comp.opts || {}), rowH: Math.max(0.22, currentRowH - 0.06) };
-      } else if (comp.type === 'cardGrid' || comp.type === 'pieChart') {
+      } else if (comp.type === 'cardGrid' || comp.type === 'pieChart' || comp.type === 'barChart' || comp.type === 'lineChart') {
         comp.opts = { ...(comp.opts || {}), compact: true };
       } else if (comp.type === 'row' && comp.children) {
         for (const child of comp.children) {
