@@ -85,8 +85,8 @@ const DECK_SPEC_TOOL = {
                   type: {
                     type: 'string',
                     enum: ['card', 'statCard', 'calloutBox', 'bullets', 'checklist',
-                           'stepRow', 'comparison', 'styledTable', 'redFlagPairs',
-                           'rawHtml', 'cardGrid', 'row'],
+                           'stepRow', 'comparison', 'styledTable', 'plainTable',
+                           'redFlagPairs', 'rawHtml', 'cardGrid', 'row'],
                   },
                   // Component-specific fields (all optional, depends on type)
                   accent: { type: 'string' },
@@ -214,7 +214,7 @@ Use the generate_deck_specification tool to output a complete DeckSpecification 
 
 ## Design variety
 Aim for a natural mix of component types across the deck — avoid defaulting every content slide to bullets.
-When styledTable, cardGrid, stepRow, or comparison genuinely fits the data, prefer those over bullets.
+When styledTable, plainTable, cardGrid, stepRow, or comparison genuinely fits the data, prefer those over bullets.
 Repetition is fine when the content truly calls for the same format (e.g. two back-to-back question tables).
 
 ## Content component selection (evaluate in this order — first match wins)
@@ -225,11 +225,12 @@ Repetition is fine when the content truly calls for the same format (e.g. two ba
 5. Checklist / requirements (pass/fail items) → checklist
 6. 4–8 PARALLEL concepts where each item is an EQUAL-WEIGHT standalone idea (e.g. personal qualities, product features, service categories, team roles) AND each item has a short title + 1–2 sentence description that can stand alone → cardGrid
 7. 2–3 topics side by side → row with cardHtml children
-8. Tabular data with ≥3 columns → styledTable
-9. 5–8 items with "{shortLabel}: {longDescription}" pattern → styledTable (2-col)
-10. ≤5 supporting points under a heading → bullets
-11. Stat/metric highlights → row with cardHtml (statCard style)
-12. Everything else → bullets or rawHtml
+8. Borderless 2-column list (e.g. agenda, TOC, numbered topic list without grid lines) → plainTable (2-col, no header row)
+9. Tabular data with ≥3 columns → styledTable
+10. 5–8 items with "{shortLabel}: {longDescription}" pattern → styledTable (2-col)
+11. ≤5 supporting points under a heading → bullets
+12. Stat/metric highlights → row with cardHtml (statCard style)
+13. Everything else → bullets or rawHtml
 
 ### cardGrid vs. bullets/styledTable decision
 Use cardGrid when ALL of these are true:
@@ -247,6 +248,14 @@ Do NOT use cardGrid when:
 
 ### Bullet list sizing
 When ≤5 items, use bullets with fontSize: 18 (3 items), 16 (4), 14 (5).
+
+### plainTable (borderless list table)
+Use plainTable for 2-column lists that appear borderless and headerless in the source PDF — e.g. agenda/TOC slides with a number column and a topic column. plainTable has NO header row: every row in "rows" is data.
+- Column 1 text is bold + blue, column 2+ text is normal navy
+- All text is left-aligned with no cell borders or background colors
+- Rows are separated by a subtle divider line
+- Set colWidths proportional to content: e.g. [1, 4] for number + topic
+- Set rowH to fill: 0.42 for ≤6 rows, 0.36 for 7-8, 0.30 for 9-10, 0.26 for 11+
 
 ### styledTable sizing
 When items follow "{shortLabel}: {longDescription}" pattern and count > 5, use styledTable:
@@ -367,14 +376,14 @@ Downsize fix strategies (overflow):
 - cardHtml (in row children): add "compact": true in opts for ALL children on that slide
 - cardGrid: add "compact": true in opts
 - bullets: add "fontSize": 10 in opts
-- styledTable: reduce rowH (e.g. 0.35 → 0.22) in opts
+- styledTable / plainTable: reduce rowH (e.g. 0.35 → 0.22) in opts
 
 Column width fix (uneven whitespace / wrapping in tables):
 - Add colWidths to opts using fr values proportional to content: [1, 3], [1, 2, 2], etc.
 
 Upsize fix strategies (undersized):
 - bullets: increase fontSize or remove constraint
-- styledTable: increase rowH (e.g. 0.22 → 0.32)
+- styledTable / plainTable: increase rowH (e.g. 0.22 → 0.32)
 - stepRow: remove compact if ample space
 - calloutBox: remove compact if ample space
 
@@ -469,7 +478,7 @@ async function visualCheckAndFix(outputDir, spec, opts, apiKey) {
       } else if (comp.type === 'bullets') {
         const currentSize = comp.opts?.fontSize || 12;
         comp.opts = { ...(comp.opts || {}), fontSize: Math.max(9, currentSize - 2) };
-      } else if (comp.type === 'styledTable') {
+      } else if (comp.type === 'styledTable' || comp.type === 'plainTable') {
         const currentRowH = comp.opts?.rowH || 0.35;
         comp.opts = { ...(comp.opts || {}), rowH: Math.max(0.22, currentRowH - 0.06) };
       } else if (comp.type === 'cardGrid') {
